@@ -454,7 +454,7 @@ const Payment = () => {
                     className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/10 border border-blue-500/30 text-blue-400 rounded-lg hover:bg-blue-500/20 transition-colors font-body text-sm font-semibold"
                   >
                     <Phone className="w-4 h-4" />
-                    Call 0911 288 820
+                    Call 0995871152
                   </a>
                 </div>
               </CardContent>
@@ -509,4 +509,4 @@ const Payment = () => {
   );
 };
 
-export default Payment;
+export default Payment;// Commit 9 - 2024-05-05 12:54:00
