@@ -710,3 +710,4 @@ const ProductDetail = () => {
 export default ProductDetail;// Commit 6 - 2024-05-03 17:48:00
 // Commit 11 - 2024-05-03 20:31:00
 // Commit 63 - 2024-05-21 00:27:00
+// Commit 65 - 2024-05-22 16:43:00
