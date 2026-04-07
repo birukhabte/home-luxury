@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Phone, ArrowLeft } from "lucide-react";
+import { Phone, ArrowLeft, ShoppingBag } from "lucide-react";
 import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -127,13 +127,23 @@ const LuxurySofas = () => {
                 <p className="font-body text-sm text-muted-foreground leading-relaxed mb-4">
                   {sofa.description}
                 </p>
-                <a
-                  href="tel:0911288820"
-                  className="inline-flex items-center gap-2 text-primary hover:text-gold-light transition-colors font-body text-sm font-semibold tracking-[0.1em] uppercase"
-                >
-                  <Phone className="w-3.5 h-3.5" />
-                  Inquire
-                </a>
+                {sofa.name === "The Sovereign" ? (
+                  <Link
+                    to="/sovereign-order"
+                    className="inline-flex items-center gap-2 text-primary hover:text-gold-light transition-colors font-body text-sm font-semibold tracking-[0.1em] uppercase"
+                  >
+                    <ShoppingBag className="w-3.5 h-3.5" />
+                    Order Now
+                  </Link>
+                ) : (
+                  <a
+                    href="tel:0911288820"
+                    className="inline-flex items-center gap-2 text-primary hover:text-gold-light transition-colors font-body text-sm font-semibold tracking-[0.1em] uppercase"
+                  >
+                    <Phone className="w-3.5 h-3.5" />
+                    Inquire
+                  </a>
+                )}
               </motion.div>
             ))}
           </div>

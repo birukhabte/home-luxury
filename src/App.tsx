@@ -7,6 +7,7 @@ import Index from "./pages/Index.tsx";
 import LuxurySofas from "./pages/LuxurySofas.tsx";
 import ArabianMajlis from "./pages/ArabianMajlis.tsx";
 import LuxuryTVStands from "./pages/LuxuryTVStands.tsx";
+import SovereignOrder from "./pages/SovereignOrder.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import AdminLayout from "./layouts/AdminLayout.tsx";
 import Dashboard from "./pages/admin/Dashboard.tsx";
@@ -27,6 +28,7 @@ const App = () => (
           <Route path="/luxury-sofas" element={<LuxurySofas />} />
           <Route path="/arabian-majlis" element={<ArabianMajlis />} />
           <Route path="/luxury-tv-stands" element={<LuxuryTVStands />} />
+          <Route path="/sovereign-order" element={<SovereignOrder />} />
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="products" element={<Products />} />
