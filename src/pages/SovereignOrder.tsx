@@ -34,6 +34,7 @@ const SovereignOrder = () => {
     /* ── Form ── */
     const [step, setStep] = useState<Step>("details");
     const [payMethod, setPayMethod] = useState<"chapa" | "bank">("chapa");
+    const [bankSub, setBankSub] = useState<"other" | "mine">("other");
     const [form, setForm] = useState({
         name: "",
         phone: "",
@@ -142,10 +143,10 @@ const SovereignOrder = () => {
                             <div key={s.id} className="flex items-center gap-3">
                                 <div
                                     className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border transition-colors ${step === s.id
-                                            ? "bg-primary text-primary-foreground border-primary"
-                                            : i === 0 && step === "payment"
-                                                ? "bg-primary/20 text-primary border-primary"
-                                                : "bg-muted text-muted-foreground border-border"
+                                        ? "bg-primary text-primary-foreground border-primary"
+                                        : i === 0 && step === "payment"
+                                            ? "bg-primary/20 text-primary border-primary"
+                                            : "bg-muted text-muted-foreground border-border"
                                         }`}
                                 >
                                     {i === 0 && step === "payment" ? <CheckCircle2 className="w-4 h-4" /> : i + 1}
@@ -475,8 +476,8 @@ const SovereignOrder = () => {
                                                         type="button"
                                                         onClick={() => setPayMethod(m.id as "chapa" | "bank")}
                                                         className={`border p-4 text-left transition-all duration-200 ${payMethod === m.id
-                                                                ? "border-primary bg-primary/10"
-                                                                : "border-border hover:border-primary/40"
+                                                            ? "border-primary bg-primary/10"
+                                                            : "border-border hover:border-primary/40"
                                                             }`}
                                                     >
                                                         <div className="text-2xl mb-2">{m.icon}</div>
@@ -528,37 +529,133 @@ const SovereignOrder = () => {
                                             <motion.div
                                                 initial={{ opacity: 0, y: 8 }}
                                                 animate={{ opacity: 1, y: 0 }}
-                                                className="bg-muted/10 border border-primary/30 p-5 space-y-3"
+                                                className="bg-muted/10 border border-primary/30 p-5 space-y-4"
                                             >
-                                                <p className="font-body text-sm font-semibold text-foreground">Bank Transfer Details</p>
-                                                <div className="space-y-2">
+                                                <p className="font-body text-sm font-semibold text-foreground">Bank Transfer — Choose How You'll Pay</p>
+
+                                                {/* Sub-choice buttons */}
+                                                <div className="grid grid-cols-2 gap-3">
                                                     {[
-                                                        ["Bank", "Commercial Bank of Ethiopia (CBE)"],
-                                                        ["Account Name", "Addis Majlis Glory Trading"],
-                                                        ["Account No.", "1000123456789"],
-                                                        ["Amount", `ETB ${total.toLocaleString()}`],
-                                                        ["Reference", `SOVEREIGN-${form.phone.replace(/\s/g, "").slice(-4)}`],
-                                                    ].map(([k, v]) => (
-                                                        <div key={k} className="flex justify-between text-sm font-body border-b border-border/40 pb-1">
-                                                            <span className="text-muted-foreground">{k}</span>
-                                                            <span className="text-foreground font-semibold">{v}</span>
-                                                        </div>
+                                                        { id: "other", icon: "👤", label: "Another Person's CBE", desc: "Pay from someone else's CBE account on your behalf" },
+                                                        { id: "mine", icon: "🏦", label: "My Own CBE Account", desc: "Transfer directly from your own CBE account" },
+                                                    ].map((opt) => (
+                                                        <button
+                                                            key={opt.id}
+                                                            type="button"
+                                                            onClick={() => setBankSub(opt.id as "other" | "mine")}
+                                                            className={`border p-3 text-left transition-all duration-200 ${bankSub === opt.id
+                                                                    ? "border-primary bg-primary/10"
+                                                                    : "border-border hover:border-primary/40"
+                                                                }`}
+                                                        >
+                                                            <div className="text-xl mb-1">{opt.icon}</div>
+                                                            <p className="font-body font-semibold text-xs text-foreground">{opt.label}</p>
+                                                            <p className="font-body text-xs text-muted-foreground mt-0.5">{opt.desc}</p>
+                                                        </button>
                                                     ))}
                                                 </div>
-                                                <p className="font-body text-xs text-muted-foreground pt-1">
-                                                    After transfer, send your receipt to <strong>0911 288 820</strong> on WhatsApp or call us to confirm.
-                                                </p>
-                                                {/* Receipt upload */}
-                                                <div className="pt-2">
-                                                    <label className="font-body text-xs uppercase tracking-widest text-muted-foreground block mb-2">
-                                                        Upload Transfer Receipt (Optional)
-                                                    </label>
-                                                    <input
-                                                        type="file"
-                                                        accept="image/*,application/pdf"
-                                                        className="w-full font-body text-xs text-muted-foreground file:mr-4 file:py-2 file:px-4 file:border-0 file:bg-primary file:text-primary-foreground file:font-body file:text-xs file:font-semibold file:uppercase file:tracking-widest cursor-pointer"
-                                                    />
-                                                </div>
+
+                                                {/* ── Other person's CBE ── */}
+                                                {bankSub === "other" && (
+                                                    <motion.div
+                                                        key="other"
+                                                        initial={{ opacity: 0, y: 6 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        className="space-y-3 pt-1"
+                                                    >
+                                                        <p className="font-body text-xs text-muted-foreground">
+                                                            Ask the other person to transfer to our CBE account below using your phone number as the reference.
+                                                        </p>
+                                                        <div className="space-y-2">
+                                                            {[
+                                                                ["Bank", "Commercial Bank of Ethiopia (CBE)"],
+                                                                ["Account Name", "Addis Majlis Glory Trading"],
+                                                                ["Account No.", "1000123456789"],
+                                                                ["Amount", `ETB ${total.toLocaleString()}`],
+                                                                ["Reference", `SOVEREIGN-${form.phone.replace(/\s/g, "").slice(-4)}`],
+                                                            ].map(([k, v]) => (
+                                                                <div key={k} className="flex justify-between text-sm font-body border-b border-border/40 pb-1">
+                                                                    <span className="text-muted-foreground">{k}</span>
+                                                                    <span className="text-foreground font-semibold">{v}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                        <div>
+                                                            <label className="font-body text-xs uppercase tracking-widest text-muted-foreground block mb-2">
+                                                                Sender's Full Name *
+                                                            </label>
+                                                            <input
+                                                                type="text"
+                                                                placeholder="Name of the person making the payment"
+                                                                className="w-full bg-muted/20 border border-border text-foreground font-body text-sm px-4 py-3 focus:outline-none focus:border-primary transition-colors placeholder:text-muted-foreground/50"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label className="font-body text-xs uppercase tracking-widest text-muted-foreground block mb-2">
+                                                                Upload Transfer Receipt (optional)
+                                                            </label>
+                                                            <input
+                                                                type="file"
+                                                                accept="image/*,application/pdf"
+                                                                className="w-full font-body text-xs text-muted-foreground file:mr-4 file:py-2 file:px-4 file:border-0 file:bg-primary file:text-primary-foreground file:font-body file:text-xs file:font-semibold file:uppercase file:tracking-widest cursor-pointer"
+                                                            />
+                                                        </div>
+                                                        <p className="font-body text-xs text-muted-foreground">
+                                                            After transfer, send the receipt to <strong>0911 288 820</strong> on WhatsApp.
+                                                        </p>
+                                                    </motion.div>
+                                                )}
+
+                                                {/* ── My own CBE ── */}
+                                                {bankSub === "mine" && (
+                                                    <motion.div
+                                                        key="mine"
+                                                        initial={{ opacity: 0, y: 6 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        className="space-y-3 pt-1"
+                                                    >
+                                                        <p className="font-body text-xs text-muted-foreground">
+                                                            Transfer from your own CBE account to our account below. Use your phone number as the reference so we can match your payment.
+                                                        </p>
+                                                        <div className="space-y-2">
+                                                            {[
+                                                                ["Bank", "Commercial Bank of Ethiopia (CBE)"],
+                                                                ["Account Name", "Addis Majlis Glory Trading"],
+                                                                ["Account No.", "1000123456789"],
+                                                                ["Amount", `ETB ${total.toLocaleString()}`],
+                                                                ["Reference", `SOVEREIGN-${form.phone.replace(/\s/g, "").slice(-4)}`],
+                                                            ].map(([k, v]) => (
+                                                                <div key={k} className="flex justify-between text-sm font-body border-b border-border/40 pb-1">
+                                                                    <span className="text-muted-foreground">{k}</span>
+                                                                    <span className="text-foreground font-semibold">{v}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                        <div>
+                                                            <label className="font-body text-xs uppercase tracking-widest text-muted-foreground block mb-2">
+                                                                Your CBE Account Number
+                                                            </label>
+                                                            <input
+                                                                type="text"
+                                                                placeholder="e.g. 1000XXXXXXXXX"
+                                                                className="w-full bg-muted/20 border border-border text-foreground font-body text-sm px-4 py-3 focus:outline-none focus:border-primary transition-colors placeholder:text-muted-foreground/50"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label className="font-body text-xs uppercase tracking-widest text-muted-foreground block mb-2">
+                                                                Upload Transfer Receipt (optional)
+                                                            </label>
+                                                            <input
+                                                                type="file"
+                                                                accept="image/*,application/pdf"
+                                                                className="w-full font-body text-xs text-muted-foreground file:mr-4 file:py-2 file:px-4 file:border-0 file:bg-primary file:text-primary-foreground file:font-body file:text-xs file:font-semibold file:uppercase file:tracking-widest cursor-pointer"
+                                                            />
+                                                        </div>
+                                                        <p className="font-body text-xs text-muted-foreground">
+                                                            You can also transfer via <strong>CBE mobile app</strong> or <strong>online banking</strong>. Send the receipt to <strong>0911 288 820</strong> on WhatsApp.
+                                                        </p>
+                                                    </motion.div>
+                                                )}
                                             </motion.div>
                                         )}
 
