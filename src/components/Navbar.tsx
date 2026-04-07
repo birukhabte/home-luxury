@@ -33,10 +33,10 @@ const Navbar = () => {
 
         {/* Desktop Nav */}
         <div className="hidden md:flex items-center gap-8">
-          <a href="#collections" className="font-body text-xs tracking-[0.2em] uppercase text-muted-foreground hover:text-foreground transition-colors">
+          <a href="#collections" className="font-body text-xs tracking-[0.2em] uppercase font-bold text-foreground hover:text-primary transition-colors">
             Collections
           </a>
-          <a href="#contact" className="font-body text-xs tracking-[0.2em] uppercase text-muted-foreground hover:text-foreground transition-colors">
+          <a href="#contact" className="font-body text-xs tracking-[0.2em] uppercase font-bold text-foreground hover:text-primary transition-colors">
             Showroom
           </a>
 
@@ -46,19 +46,19 @@ const Navbar = () => {
               href="https://www.tiktok.com/@homeluxuryfurnituresofa?_r=1&_t=ZS-95KjBKCbu3Z"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-muted/30 text-muted-foreground hover:bg-primary/20 hover:text-primary transition-all duration-300"
+              className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-foreground/10 text-foreground hover:bg-primary hover:text-primary-foreground transition-all duration-300"
               aria-label="TikTok"
             >
-              <TikTokIcon className="w-3.5 h-3.5" />
+              <TikTokIcon className="w-4.5 h-4.5" />
             </a>
             <a
               href="https://www.youtube.com/@realarabianmajlissofa"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-muted/30 text-muted-foreground hover:bg-primary/20 hover:text-primary transition-all duration-300"
+              className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-foreground/10 text-foreground hover:bg-primary hover:text-primary-foreground transition-all duration-300"
               aria-label="YouTube"
             >
-              <Youtube className="w-3.5 h-3.5" />
+              <Youtube className="w-4.5 h-4.5" />
             </a>
           </div>
 
@@ -77,19 +77,19 @@ const Navbar = () => {
             href="https://www.tiktok.com/@homeluxuryfurnituresofa?_r=1&_t=ZS-95KjBKCbu3Z"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-muted/30 text-muted-foreground hover:text-primary transition-colors"
+            className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-foreground/10 text-foreground hover:bg-primary hover:text-primary-foreground transition-all duration-300"
             aria-label="TikTok"
           >
-            <TikTokIcon className="w-3.5 h-3.5" />
+            <TikTokIcon className="w-4 h-4" />
           </a>
           <a
             href="https://www.youtube.com/@realarabianmajlissofa"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-muted/30 text-muted-foreground hover:text-primary transition-colors"
+            className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-foreground/10 text-foreground hover:bg-primary hover:text-primary-foreground transition-all duration-300"
             aria-label="YouTube"
           >
-            <Youtube className="w-3.5 h-3.5" />
+            <Youtube className="w-4 h-4" />
           </a>
           <a
             href="tel:0911288820"
