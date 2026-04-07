@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import luxurySofa from "@/assets/luxury-sofa.jpg";
 import arabianMajlis from "@/assets/arabian-majlis.jpg";
-import promoBanner from "@/assets/promo-banner.jpg";
+import tvStand from "@/assets/tv stand/tvmain.jpg";
 
 const products = [
   {
@@ -31,7 +31,7 @@ const products = [
     description:
       "Transform your living room with our handcrafted luxury TV stands. Premium walnut, marble, and oak constructions with gold accents and intelligent cable management — designed to showcase your screen in style while keeping your space immaculate.",
     features: ["Premium Wood & Marble", "Integrated Cable Management", "Soft-Close Drawers", "Custom Sizes Available"],
-    image: promoBanner,
+    image: tvStand,
     alt: "Luxury TV stand with premium walnut wood and brass accents - available in Addis Ababa",
     link: "/luxury-tv-stands",
   },

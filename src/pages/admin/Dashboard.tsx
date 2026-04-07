@@ -4,7 +4,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 
 const stats = [
   { title: "Total Revenue", value: "SAR 847,500", change: "+12.5%", icon: DollarSign },
-  { title: "Products Listed", value: "14", change: "+2", icon: Package },
+  { title: "Products Listed", value: "20", change: "+6", icon: Package },
   { title: "New Inquiries", value: "28", change: "+8", icon: MessageSquare },
   { title: "Conversion Rate", value: "4.2%", change: "+0.8%", icon: TrendingUp },
   { title: "Page Views", value: "12,480", change: "+18%", icon: Eye },
@@ -24,8 +24,9 @@ const revenueData = [
 ];
 
 const categoryData = [
-  { name: "Luxury Sofas", value: 58, color: "hsl(40 65% 50%)" },
-  { name: "Arabian Majlis", value: 42, color: "hsl(345 50% 30%)" },
+  { name: "Luxury Sofas", value: 45, color: "hsl(40 65% 50%)" },
+  { name: "Arabian Majlis", value: 35, color: "hsl(345 50% 30%)" },
+  { name: "TV Stands", value: 20, color: "hsl(210 60% 45%)" },
 ];
 
 const inquiryData = [

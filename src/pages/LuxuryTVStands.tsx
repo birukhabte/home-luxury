@@ -4,42 +4,70 @@ import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
+import tvMain from "@/assets/tv stand/tvmain.jpg";
+import tv2 from "@/assets/tv stand/tv2.jpg";
+import tv3 from "@/assets/tv stand/tv3.jpg";
+import tv4 from "@/assets/tv stand/tv4.jpg";
+import tv5 from "@/assets/tv stand/tv5.jpg";
+import tv6 from "@/assets/tv stand/tv6.jpg";
+import tvExtra from "@/assets/tv stand/photo_2024-01-22_17-20-05.jpg";
+
 const tvStands = [
   {
     name: "The Imperial Console",
     material: "Walnut & Brass",
-    description: "Premium walnut wood with brass inlay details and soft-close drawers. A centerpiece for your entertainment space.",
+    description:
+      "Premium walnut wood with brass inlay details and soft-close drawers. A centerpiece for your entertainment space.",
     features: ["Soft-close drawers", "Cable management system", "Tempered glass shelves"],
+    image: tvMain,
   },
   {
     name: "The Monarch Stand",
     material: "Oak & Gold Accents",
-    description: "Solid oak construction with gold-plated handles and integrated LED lighting. Modern luxury meets functionality.",
+    description:
+      "Solid oak construction with gold-plated handles and integrated LED lighting. Modern luxury meets functionality.",
     features: ["Integrated LED lighting", "Adjustable shelving", "Premium oak finish"],
+    image: tv2,
   },
   {
     name: "The Prestige Unit",
     material: "Marble & Steel",
-    description: "Italian marble top with brushed steel frame. Contemporary elegance for the modern home.",
+    description:
+      "Italian marble top with brushed steel frame. Contemporary elegance for the modern home.",
     features: ["Italian marble surface", "Steel frame construction", "Open and closed storage"],
+    image: tv3,
   },
   {
     name: "The Regal Cabinet",
     material: "Mahogany & Bronze",
-    description: "Rich mahogany wood with bronze hardware and hand-carved details. Timeless sophistication.",
+    description:
+      "Rich mahogany wood with bronze hardware and hand-carved details. Timeless sophistication.",
     features: ["Hand-carved details", "Bronze hardware", "Multiple compartments"],
+    image: tv4,
   },
   {
     name: "The Executive Media Center",
     material: "Ebony & Chrome",
-    description: "Sleek ebony finish with chrome accents and floating design. Perfect for contemporary interiors.",
+    description:
+      "Sleek ebony finish with chrome accents and floating design. Perfect for contemporary interiors.",
     features: ["Floating wall mount option", "Chrome accents", "Hidden cable channels"],
+    image: tv5,
   },
   {
     name: "The Grand Entertainment Unit",
     material: "Teak & Gold Leaf",
-    description: "Expansive teak wood unit with gold leaf detailing. Designed for large living spaces and home theaters.",
+    description:
+      "Expansive teak wood unit with gold leaf detailing. Designed for large living spaces and home theaters.",
     features: ["Extra-wide design", "Gold leaf accents", "Soundbar integration"],
+    image: tv6,
+  },
+  {
+    name: "The Heritage Studio Stand",
+    material: "Reclaimed Wood & Copper",
+    description:
+      "Crafted from reclaimed wood with artisan copper fittings. Earthy luxury with a contemporary soul.",
+    features: ["Reclaimed wood character", "Copper pipe accents", "Rustic-modern aesthetic"],
+    image: tvExtra,
   },
 ];
 
@@ -50,7 +78,8 @@ const LuxuryTVStands = () => {
 
       {/* Hero Banner */}
       <section className="pt-32 pb-16 bg-charcoal-gradient relative overflow-hidden">
-        <div className="absolute inset-0 opacity-[0.03]"
+        <div
+          className="absolute inset-0 opacity-[0.03]"
           style={{
             backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23c9a84c' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
           }}
@@ -75,7 +104,8 @@ const LuxuryTVStands = () => {
               Luxury <span className="text-gold-gradient">TV Stands</span>
             </h1>
             <p className="font-body text-muted-foreground text-lg max-w-2xl">
-              Elevate your entertainment space with our handcrafted TV stands. Each piece combines premium materials with intelligent design for the ultimate viewing experience.
+              Elevate your entertainment space with our handcrafted TV stands. Each piece combines
+              premium materials with intelligent design for the ultimate viewing experience.
             </p>
           </motion.div>
         </div>
@@ -94,13 +124,13 @@ const LuxuryTVStands = () => {
                 transition={{ duration: 0.5, delay: index * 0.1 }}
                 className="group"
               >
-                <div className="relative overflow-hidden mb-5 bg-muted/20 aspect-[4/3] flex items-center justify-center border border-border">
-                  <div className="text-center p-8">
-                    <div className="w-20 h-20 mx-auto mb-4 border-2 border-primary/30 rounded-full flex items-center justify-center">
-                      <span className="text-primary text-2xl font-display">TV</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">Image Coming Soon</p>
-                  </div>
+                <div className="relative overflow-hidden mb-5 aspect-[4/3]">
+                  <img
+                    src={stand.image}
+                    alt={stand.name}
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    loading="lazy"
+                  />
                   <div className="absolute inset-0 border border-primary/10 pointer-events-none group-hover:border-primary/30 transition-colors duration-300" />
                 </div>
                 <span className="font-accent text-xs tracking-[0.25em] uppercase text-primary block mb-1">
@@ -145,7 +175,8 @@ const LuxuryTVStands = () => {
               Custom Designs Available
             </h2>
             <p className="font-body text-muted-foreground mb-8 max-w-lg mx-auto">
-              Need a specific size or finish? We create bespoke TV stands tailored to your space and style preferences.
+              Need a specific size or finish? We create bespoke TV stands tailored to your space
+              and style preferences.
             </p>
             <a
               href="tel:0911288820"
