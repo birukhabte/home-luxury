@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Pencil, Trash2, Search } from "lucide-react";
-import { apiDelete, apiGet, apiPost, apiPut } from "@/lib/api";
+import { apiDelete, apiGet, apiPost, apiPut, apiUpload } from "@/lib/api";
 
 type Category = "Luxury Sofas" | "Arabian Majlis" | "Luxury TV Stands";
 type Status = "Active" | "Draft" | "Out of Stock";
@@ -20,6 +20,8 @@ interface Product {
   price: string;
   material: string;
   status: Status;
+  imageUrl?: string;
+  imageUrls?: string[];
 }
 
 const initialProducts: Product[] = [];
@@ -33,7 +35,15 @@ const statusBadge: Record<Status, string> = {
   "Out of Stock": "bg-red-500/20 text-red-400 border-red-500/30",
 };
 
-const emptyForm = { name: "", category: "Luxury TV Stands" as Category, material: "", price: "", status: "Active" as Status };
+const emptyForm = {
+  name: "",
+  category: "Luxury TV Stands" as Category,
+  material: "",
+  price: "",
+  status: "Active" as Status,
+  imageUrl: "",
+  imageUrls: [] as string[],
+};
 
 const Products = () => {
   const [products, setProducts] = useState<Product[]>(initialProducts);
@@ -45,8 +55,20 @@ const Products = () => {
   const [form, setForm] = useState(emptyForm);
 
   useEffect(() => {
-    apiGet<Product[]>("/products")
-      .then(setProducts)
+    apiGet<any[]>("/products")
+      .then((data) => {
+        const mapped: Product[] = data.map((p: any) => ({
+          id: p.id || p._id,
+          name: p.name,
+          category: p.category,
+          price: p.price,
+          material: p.material,
+          status: p.status,
+          imageUrl: p.imageUrl,
+          imageUrls: p.imageUrls || [],
+        }));
+        setProducts(mapped);
+      })
       .catch((error) => {
         console.error("Failed to load products", error);
       });
@@ -76,14 +98,32 @@ const Products = () => {
   };
 
   const openEdit = (p: Product) => {
-    setForm({ name: p.name, category: p.category, material: p.material, price: p.price, status: p.status });
+    setForm({
+      name: p.name,
+      category: p.category,
+      material: p.material,
+      price: p.price,
+      status: p.status,
+      imageUrl: p.imageUrl || "",
+      imageUrls: p.imageUrls || [],
+    });
     setEditDialog(p);
   };
 
   const handleAdd = async () => {
     if (!form.name.trim() || !form.material.trim() || !form.price.trim()) return;
     try {
-      const created = await apiPost<Product, Omit<Product, "id">>("/products", form as Omit<Product, "id">);
+      const createdRaw = await apiPost<any, Omit<Product, "id">>("/products", form as Omit<Product, "id">);
+      const created: Product = {
+        id: createdRaw.id || createdRaw._id,
+        name: createdRaw.name,
+        category: createdRaw.category,
+        price: createdRaw.price,
+        material: createdRaw.material,
+        status: createdRaw.status,
+        imageUrl: createdRaw.imageUrl,
+        imageUrls: createdRaw.imageUrls || [],
+      };
       setProducts((prev) => [...prev, created]);
       setAddDialog(false);
     } catch (error) {
@@ -94,7 +134,17 @@ const Products = () => {
   const handleEdit = async () => {
     if (!editDialog || !form.name.trim()) return;
     try {
-      const updated = await apiPut<Product, Omit<Product, "id">>(`/products/${editDialog.id}`, form as Omit<Product, "id">);
+      const updatedRaw = await apiPut<any, Omit<Product, "id">>(`/products/${editDialog.id}`, form as Omit<Product, "id">);
+      const updated: Product = {
+        id: updatedRaw.id || updatedRaw._id,
+        name: updatedRaw.name,
+        category: updatedRaw.category,
+        price: updatedRaw.price,
+        material: updatedRaw.material,
+        status: updatedRaw.status,
+        imageUrl: updatedRaw.imageUrl,
+        imageUrls: updatedRaw.imageUrls || [],
+      };
       setProducts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
       setEditDialog(null);
     } catch (error) {
@@ -128,6 +178,16 @@ const Products = () => {
         <Input id="prod-price" placeholder="e.g. ETB 95,000" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} className="bg-secondary border-border" />
       </div>
       <div className="space-y-1.5">
+        <Label htmlFor="prod-image">Image URL</Label>
+        <Input
+          id="prod-image"
+          placeholder="https://..."
+          value={form.imageUrl}
+          onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
+          className="bg-secondary border-border"
+        />
+      </div>
+      <div className="space-y-1.5">
         <Label>Status</Label>
         <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as Status })}>
           <SelectTrigger className="bg-secondary border-border">
@@ -137,6 +197,56 @@ const Products = () => {
             {STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
           </SelectContent>
         </Select>
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="prod-image">Primary Image URL</Label>
+        <Input
+          id="prod-image"
+          placeholder="https://..."
+          value={form.imageUrl}
+          onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
+          className="bg-secondary border-border"
+        />
+        <p className="text-[11px] text-muted-foreground mt-1">Optional main image URL for this product.</p>
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="prod-images-upload">Upload Images (max 5)</Label>
+        <Input
+          id="prod-images-upload"
+          type="file"
+          multiple
+          accept="image/*"
+          className="bg-secondary border-border"
+          onChange={async (e) => {
+            const files = e.target.files;
+            if (!files) return;
+            const remaining = 5 - (form.imageUrls?.length || 0);
+            if (remaining <= 0) return;
+
+            const selected = Array.from(files).slice(0, remaining);
+            if (selected.length === 0) return;
+
+            const data = new FormData();
+            selected.forEach((file) => data.append("files", file));
+
+            try {
+              const res = await apiUpload<{ urls: string[] }>("/products/upload-images", data);
+              setForm((prev) => ({
+                ...prev,
+                imageUrls: [...(prev.imageUrls || []), ...(res.urls || [])].slice(0, 5),
+              }));
+            } catch (err) {
+              console.error("Failed to upload images", err);
+            } finally {
+              e.target.value = "";
+            }
+          }}
+        />
+        {form.imageUrls && form.imageUrls.length > 0 && (
+          <p className="text-[11px] text-muted-foreground">
+            {form.imageUrls.length} image{form.imageUrls.length > 1 ? "s" : ""} attached.
+          </p>
+        )}
       </div>
     </div>
   );
@@ -185,6 +295,7 @@ const Products = () => {
           <Table>
             <TableHeader>
               <TableRow className="border-border hover:bg-transparent">
+                <TableHead className="text-muted-foreground">Image</TableHead>
                 <TableHead className="text-muted-foreground">Product</TableHead>
                 <TableHead className="text-muted-foreground">Category</TableHead>
                 <TableHead className="text-muted-foreground">Material</TableHead>
@@ -194,17 +305,32 @@ const Products = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((product) => (
-                <TableRow key={product.id} className="border-border">
-                  <TableCell className="font-medium text-foreground">{product.name}</TableCell>
-                  <TableCell className="text-muted-foreground text-sm">{product.category}</TableCell>
-                  <TableCell className="text-muted-foreground text-sm">{product.material}</TableCell>
-                  <TableCell className="text-foreground font-semibold">{product.price}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className={statusBadge[product.status]}>
-                      {product.status}
-                    </Badge>
-                  </TableCell>
+              {filtered.map((product) => {
+                const thumb = product.imageUrl || product.imageUrls?.[0];
+                return (
+                  <TableRow key={product.id} className="border-border">
+                    <TableCell className="w-[72px]">
+                      {thumb ? (
+                        <img
+                          src={thumb}
+                          alt={product.name}
+                          className="h-12 w-12 rounded-md object-cover border border-border"
+                        />
+                      ) : (
+                        <div className="h-12 w-12 rounded-md border border-dashed border-border flex items-center justify-center text-[10px] text-muted-foreground">
+                          No image
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell className="font-medium text-foreground">{product.name}</TableCell>
+                    <TableCell className="text-muted-foreground text-sm">{product.category}</TableCell>
+                    <TableCell className="text-muted-foreground text-sm">{product.material}</TableCell>
+                    <TableCell className="text-foreground font-semibold">{product.price}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={statusBadge[product.status]}>
+                        {product.status}
+                      </Badge>
+                    </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => openEdit(product)}>
@@ -220,8 +346,9 @@ const Products = () => {
                       </Button>
                     </div>
                   </TableCell>
-                </TableRow>
-              ))}
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
           {filtered.length === 0 && (
@@ -232,7 +359,7 @@ const Products = () => {
 
       {/* Add Product Dialog */}
       <Dialog open={addDialog} onOpenChange={setAddDialog}>
-        <DialogContent className="bg-card border-border">
+        <DialogContent className="bg-card border-border max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-display">Add New Product</DialogTitle>
           </DialogHeader>
@@ -246,7 +373,7 @@ const Products = () => {
 
       {/* Edit Product Dialog */}
       <Dialog open={!!editDialog} onOpenChange={() => setEditDialog(null)}>
-        <DialogContent className="bg-card border-border">
+        <DialogContent className="bg-card border-border max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-display">Edit Product</DialogTitle>
           </DialogHeader>

@@ -20,6 +20,12 @@ export class Product {
   @Prop({ required: true })
   material!: string;
 
+  @Prop()
+  imageUrl?: string;
+
+  @Prop({ type: [String], default: [] })
+  imageUrls!: string[];
+
   @Prop({ required: true, enum: ['Active', 'Draft', 'Out of Stock'] })
   status!: ProductStatus;
 }

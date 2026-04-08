@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Phone, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -11,6 +12,20 @@ import tv4 from "@/assets/tv stand/tv4.jpg";
 import tv5 from "@/assets/tv stand/tv5.jpg";
 import tv6 from "@/assets/tv stand/tv6.jpg";
 import tvExtra from "@/assets/tv stand/photo_2024-01-22_17-20-05.jpg";
+import { apiGet } from "@/lib/api";
+
+type Category = "Luxury Sofas" | "Arabian Majlis" | "Luxury TV Stands";
+
+interface Product {
+  id: string;
+  name: string;
+  category: Category;
+  material: string;
+  price: string;
+  status: string;
+  imageUrl?: string;
+  imageUrls?: string[];
+}
 
 const tvStands = [
   {
@@ -72,6 +87,30 @@ const tvStands = [
 ];
 
 const LuxuryTVStands = () => {
+  const [dbProducts, setDbProducts] = useState<Product[]>([]);
+
+  useEffect(() => {
+    apiGet<any[]>("/products")
+      .then((data) => {
+        const mapped: Product[] = data
+          .map((p: any) => ({
+            id: p.id || p._id,
+            name: p.name,
+            category: p.category,
+            material: p.material,
+            price: p.price,
+            status: p.status,
+            imageUrl: p.imageUrl,
+            imageUrls: p.imageUrls || [],
+          }))
+          .filter((p) => p.category === "Luxury TV Stands" && p.status === "Active");
+        setDbProducts(mapped);
+      })
+      .catch((err) => {
+        console.error("Failed to load TV stands from backend", err);
+      });
+  }, []);
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -111,7 +150,72 @@ const LuxuryTVStands = () => {
         </div>
       </section>
 
-      {/* TV Stands Grid */}
+      {/* Dynamic TV Stands Grid from Admin */}
+      <section className="py-16 bg-charcoal-gradient border-b border-border/40">
+        <div className="container mx-auto px-6 lg:px-16">
+          {dbProducts.length > 0 && (
+            <div className="mb-10">
+              <h2 className="font-display text-2xl font-bold text-foreground mb-2">
+                Available TV Stands
+              </h2>
+              <p className="font-body text-sm text-muted-foreground max-w-xl">
+                These TV stands are managed from the admin panel and reflect your live catalog.
+              </p>
+            </div>
+          )}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {dbProducts.map((product) => {
+              const img = product.imageUrl || product.imageUrls?.[0];
+              return (
+                <motion.div
+                  key={product.id}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5 }}
+                  className="group"
+                >
+                  <div className="relative overflow-hidden mb-5 aspect-[4/3]">
+                    {img ? (
+                      <img
+                        src={img}
+                        alt={product.name}
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-muted/20 border border-border flex items-center justify-center text-xs text-muted-foreground">
+                        No image
+                      </div>
+                    )}
+                    <div className="absolute inset-0 border border-primary/10 pointer-events-none group-hover:border-primary/30 transition-colors duration-300" />
+                  </div>
+                  <span className="font-accent text-xs tracking-[0.25em] uppercase text-primary block mb-1">
+                    {product.material}
+                  </span>
+                  <h3 className="font-display text-xl font-bold text-foreground mb-1">
+                    {product.name}
+                  </h3>
+                  {product.price && (
+                    <p className="font-body text-sm text-muted-foreground mb-3">
+                      {product.price}
+                    </p>
+                  )}
+                  <a
+                    href="tel:0911288820"
+                    className="inline-flex items-center gap-2 text-primary hover:text-gold-light transition-colors font-body text-sm font-semibold tracking-[0.1em] uppercase"
+                  >
+                    <Phone className="w-3.5 h-3.5" />
+                    Inquire
+                  </a>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* Static TV Stands Grid */}
       <section className="py-20 bg-charcoal-gradient">
         <div className="container mx-auto px-6 lg:px-16">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">

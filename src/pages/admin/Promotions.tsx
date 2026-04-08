@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Pencil, Trash2, Search, Tag } from "lucide-react";
+import { apiDelete, apiGet, apiPost, apiPut, apiUpload } from "@/lib/api";
 
 interface Promotion {
   id: string;
@@ -20,54 +21,52 @@ interface Promotion {
   description: string;
   link: string;
   status: "Active" | "Draft" | "Expired";
+  imageUrls?: string[];
 }
+// Normalize backend promotion document into the admin UI shape
+function normalizePromotion(promo: any): Promotion {
+  const id = promo.id || promo._id || "";
+  const name = promo.name || promo.title || "";
+  const category = promo.category || "Luxury Sofas";
+  const discountFromNumber =
+    promo.discountPercentage !== undefined && promo.discountPercentage !== null
+      ? `${promo.discountPercentage}%`
+      : "";
 
-const initialPromotions: Promotion[] = [
-  {
-    id: "1",
-    name: "Royal Chesterfield Sofa",
-    category: "Luxury Sofas",
-    originalPrice: "ETB 185,000",
-    salePrice: "ETB 148,000",
-    discount: "20%",
-    description: "Hand-tufted genuine leather with solid hardwood frame — timeless British elegance.",
-    link: "/luxury-sofas",
-    status: "Active",
-  },
-  {
-    id: "2",
-    name: "The Grand Heritage Majlis",
-    category: "Arabian Majlis",
-    originalPrice: "ETB 220,000",
-    salePrice: "ETB 165,000",
-    discount: "25%",
-    description: "Full majlis set with hand-embroidered cushions and ornate gold trim.",
-    link: "/arabian-majlis",
-    status: "Active",
-  },
-  {
-    id: "3",
-    name: "Milano Sectional L-Shape",
-    category: "Luxury Sofas",
-    originalPrice: "ETB 160,000",
-    salePrice: "ETB 128,000",
-    discount: "20%",
-    description: "Italian-inspired modular sectional in premium velvet — seats up to 8 guests.",
-    link: "/luxury-sofas",
-    status: "Active",
-  },
-  {
-    id: "4",
-    name: "Azure Majesty Set",
-    category: "Arabian Majlis",
-    originalPrice: "ETB 195,000",
-    salePrice: "ETB 136,500",
-    discount: "30%",
-    description: "Royal blue majlis with silver accents and plush floor seating for 12.",
-    link: "/arabian-majlis",
-    status: "Active",
-  },
-];
+  const discount: string = promo.discount || discountFromNumber || "";
+
+  const link: string =
+    promo.link || (category === "Arabian Majlis" ? "/arabian-majlis" : "/luxury-sofas");
+
+  const isActive: boolean =
+    typeof promo.isActive === "boolean" ? promo.isActive : promo.status === "Active";
+
+  const status: Promotion["status"] =
+    promo.status && ["Active", "Draft", "Expired"].includes(promo.status)
+      ? promo.status
+      : isActive
+      ? "Active"
+      : "Draft";
+
+  const imageUrls: string[] = promo.imageUrls && Array.isArray(promo.imageUrls)
+    ? promo.imageUrls
+    : promo.imageUrl
+    ? [promo.imageUrl]
+    : [];
+
+  return {
+    id,
+    name,
+    category,
+    originalPrice: promo.originalPrice || "",
+    salePrice: promo.salePrice || "",
+    discount,
+    description: promo.description || "",
+    link,
+    status,
+    imageUrls,
+  };
+}
 
 const statusBadge: Record<string, string> = {
   Active: "bg-green-500/20 text-green-400 border-green-500/30",
@@ -84,16 +83,30 @@ const emptyPromo: Omit<Promotion, "id"> = {
   description: "",
   link: "/luxury-sofas",
   status: "Draft",
+  imageUrls: [],
 };
 
 const Promotions = () => {
-  const [promotions, setPromotions] = useState<Promotion[]>(initialPromotions);
+  const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
   const [deleteDialog, setDeleteDialog] = useState<Promotion | null>(null);
   const [formDialog, setFormDialog] = useState(false);
   const [editingPromo, setEditingPromo] = useState<Promotion | null>(null);
   const [form, setForm] = useState<Omit<Promotion, "id">>(emptyPromo);
+
+  // Load promotions from backend
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await apiGet<any[]>("/promotions");
+        const normalized = (data || []).map(normalizePromotion);
+        setPromotions(normalized);
+      } catch (err) {
+        console.error("Failed to load promotions", err);
+      }
+    })();
+  }, []);
 
   const filtered = promotions.filter((p) => {
     const matchSearch = p.name.toLowerCase().includes(search.toLowerCase());
@@ -103,8 +116,17 @@ const Promotions = () => {
 
   const handleDelete = () => {
     if (deleteDialog) {
-      setPromotions(promotions.filter((p) => p.id !== deleteDialog.id));
-      setDeleteDialog(null);
+      const toDelete = deleteDialog;
+      (async () => {
+        try {
+          await apiDelete(`/promotions/${toDelete.id}`);
+          setPromotions((prev) => prev.filter((p) => p.id !== toDelete.id));
+        } catch (err) {
+          console.error("Failed to delete promotion", err);
+        } finally {
+          setDeleteDialog(null);
+        }
+      })();
     }
   };
 
@@ -121,16 +143,47 @@ const Promotions = () => {
     setFormDialog(true);
   };
 
-  const handleSave = () => {
+  const buildPayloadFromForm = (f: Omit<Promotion, "id">) => {
+    const percent = parseFloat(f.discount.replace("%", "").trim());
+    return {
+      // Primary fields used by UI
+      name: f.name,
+      category: f.category,
+      originalPrice: f.originalPrice,
+      salePrice: f.salePrice,
+      discount: f.discount,
+      description: f.description,
+      link: f.link,
+      status: f.status,
+      imageUrls: f.imageUrls || [],
+      // Legacy-compatible fields for backend
+      title: f.name,
+      discountPercentage: !isNaN(percent) ? percent : undefined,
+      isActive: f.status === "Active",
+    };
+  };
+
+  const handleSave = async () => {
     if (!form.name || !form.originalPrice || !form.salePrice || !form.discount) return;
-    if (editingPromo) {
-      setPromotions(promotions.map((p) => (p.id === editingPromo.id ? { ...form, id: editingPromo.id } : p)));
-    } else {
-      setPromotions([...promotions, { ...form, id: Date.now().toString() }]);
+
+    const payload = buildPayloadFromForm(form);
+
+    try {
+      if (editingPromo) {
+        const updated = await apiPut<any, any>(`/promotions/${editingPromo.id}`, payload);
+        const normalized = normalizePromotion(updated);
+        setPromotions((prev) => prev.map((p) => (p.id === editingPromo.id ? normalized : p)));
+      } else {
+        const created = await apiPost<any, any>("/promotions", payload);
+        const normalized = normalizePromotion(created);
+        setPromotions((prev) => [...prev, normalized]);
+      }
+      setFormDialog(false);
+      setForm(emptyPromo);
+      setEditingPromo(null);
+    } catch (err) {
+      console.error("Failed to save promotion", err);
     }
-    setFormDialog(false);
-    setForm(emptyPromo);
-    setEditingPromo(null);
   };
 
   const updateForm = (key: keyof Omit<Promotion, "id">, value: string) => {
@@ -188,6 +241,7 @@ const Promotions = () => {
           <Table>
             <TableHeader>
               <TableRow className="border-border hover:bg-transparent">
+                <TableHead className="text-muted-foreground">Image</TableHead>
                 <TableHead className="text-muted-foreground">Deal Name</TableHead>
                 <TableHead className="text-muted-foreground">Category</TableHead>
                 <TableHead className="text-muted-foreground">Original Price</TableHead>
@@ -198,44 +252,60 @@ const Promotions = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((promo) => (
-                <TableRow key={promo.id} className="border-border">
-                  <TableCell className="font-medium text-foreground">{promo.name}</TableCell>
-                  <TableCell className="text-muted-foreground text-sm">{promo.category}</TableCell>
-                  <TableCell className="text-muted-foreground text-sm line-through">{promo.originalPrice}</TableCell>
-                  <TableCell className="text-foreground font-semibold">{promo.salePrice}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/30">
-                      {promo.discount} OFF
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className={statusBadge[promo.status]}>
-                      {promo.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                        onClick={() => openEditDialog(promo)}
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                        onClick={() => setDeleteDialog(promo)}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {filtered.map((promo) => {
+                const thumb = promo.imageUrls && promo.imageUrls.length > 0 ? promo.imageUrls[0] : undefined;
+                return (
+                  <TableRow key={promo.id} className="border-border">
+                    <TableCell className="w-[72px]">
+                      {thumb ? (
+                        <img
+                          src={thumb}
+                          alt={promo.name}
+                          className="h-12 w-12 rounded-md object-cover border border-border"
+                        />
+                      ) : (
+                        <div className="h-12 w-12 rounded-md border border-dashed border-border flex items-center justify-center text-[10px] text-muted-foreground">
+                          No image
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell className="font-medium text-foreground">{promo.name}</TableCell>
+                    <TableCell className="text-muted-foreground text-sm">{promo.category}</TableCell>
+                    <TableCell className="text-muted-foreground text-sm line-through">{promo.originalPrice}</TableCell>
+                    <TableCell className="text-foreground font-semibold">{promo.salePrice}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/30">
+                        {promo.discount} OFF
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={statusBadge[promo.status]}>
+                        {promo.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                          onClick={() => openEditDialog(promo)}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                          onClick={() => setDeleteDialog(promo)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
           {filtered.length === 0 && (
@@ -246,7 +316,7 @@ const Promotions = () => {
 
       {/* Create / Edit Dialog */}
       <Dialog open={formDialog} onOpenChange={setFormDialog}>
-        <DialogContent className="bg-card border-border sm:max-w-lg">
+        <DialogContent className="bg-card border-border sm:max-w-lg max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-display">
               {editingPromo ? "Edit Promotion" : "New Promotion"}
@@ -301,6 +371,45 @@ const Promotions = () => {
             <div className="space-y-2">
               <Label>Description</Label>
               <Textarea value={form.description} onChange={(e) => updateForm("description", e.target.value)} placeholder="Brief description of the deal..." className="bg-secondary border-border resize-none" rows={3} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="promo-images">Upload Images (max 3)</Label>
+              <Input
+                id="promo-images"
+                type="file"
+                multiple
+                accept="image/*"
+                className="bg-secondary border-border"
+                onChange={async (e) => {
+                  const files = e.target.files;
+                  if (!files) return;
+                  const remaining = 3 - (form.imageUrls?.length || 0);
+                  if (remaining <= 0) return;
+
+                  const selected = Array.from(files).slice(0, remaining);
+                  if (selected.length === 0) return;
+
+                  const data = new FormData();
+                  selected.forEach((file) => data.append("files", file));
+
+                  try {
+                    const res = await apiUpload<{ urls: string[] }>("/promotions/upload-images", data);
+                    setForm((prev) => ({
+                      ...prev,
+                      imageUrls: [...(prev.imageUrls || []), ...(res.urls || [])].slice(0, 3),
+                    }));
+                  } catch (err) {
+                    console.error("Failed to upload promotion images", err);
+                  } finally {
+                    e.target.value = "";
+                  }
+                }}
+              />
+              {form.imageUrls && form.imageUrls.length > 0 && (
+                <p className="text-[11px] text-muted-foreground">
+                  {form.imageUrls.length} image{form.imageUrls.length > 1 ? "s" : ""} attached.
+                </p>
+              )}
             </div>
           </div>
           <DialogFooter>

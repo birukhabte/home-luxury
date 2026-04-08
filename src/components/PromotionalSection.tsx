@@ -1,52 +1,71 @@
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Tag, Clock, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
-import promoBanner from "@/assets/promo-banner.jpg";
+import { apiGet } from "@/lib/api";
 
-const promos = [
-  {
-    name: "Royal Chesterfield Sofa",
-    originalPrice: "ETB 185,000",
-    salePrice: "ETB 148,000",
-    discount: "20%",
-    description: "Hand-tufted genuine leather with solid hardwood frame — timeless British elegance.",
-    image: promoBanner,
-    category: "Luxury Sofas",
-    link: "/luxury-sofas",
-  },
-  {
-    name: "The Grand Heritage Majlis",
-    originalPrice: "ETB 220,000",
-    salePrice: "ETB 165,000",
-    discount: "25%",
-    description: "Full majlis set with hand-embroidered cushions and ornate gold trim.",
-    image: promoBanner,
-    category: "Arabian Majlis",
-    link: "/arabian-majlis",
-  },
-  {
-    name: "Milano Sectional L-Shape",
-    originalPrice: "ETB 160,000",
-    salePrice: "ETB 128,000",
-    discount: "20%",
-    description: "Italian-inspired modular sectional in premium velvet — seats up to 8 guests.",
-    image: promoBanner,
-    category: "Luxury Sofas",
-    link: "/luxury-sofas",
-  },
-  {
-    name: "Azure Majesty Set",
-    originalPrice: "ETB 195,000",
-    salePrice: "ETB 136,500",
-    discount: "30%",
-    description: "Royal blue majlis with silver accents and plush floor seating for 12.",
-    image: promoBanner,
-    category: "Arabian Majlis",
-    link: "/arabian-majlis",
-  },
-];
+interface Promo {
+  id: string;
+  name: string;
+  originalPrice: string;
+  salePrice: string;
+  discount: string;
+  description: string;
+  imageUrls?: string[];
+  category: string;
+  link: string;
+}
 
 const PromotionalSection = () => {
+  const [promos, setPromos] = useState<Promo[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await apiGet<any[]>("/promotions");
+        const normalized: Promo[] = (data || [])
+          .map((p) => {
+            const status = p.status || (p.isActive ? "Active" : "Draft");
+            if (status !== "Active") return null;
+
+            const category = p.category || "Luxury Sofas";
+            const discountFromNumber =
+              p.discountPercentage !== undefined && p.discountPercentage !== null
+                ? `${p.discountPercentage}%`
+                : "";
+
+            const discount: string = p.discount || discountFromNumber || "";
+
+            const link: string =
+              p.link || (category === "Arabian Majlis" ? "/arabian-majlis" : "/luxury-sofas");
+
+            const imageUrls: string[] = p.imageUrls && Array.isArray(p.imageUrls)
+              ? p.imageUrls
+              : p.imageUrl
+              ? [p.imageUrl]
+              : [];
+
+            return {
+              id: p.id || p._id || "",
+              name: p.name || p.title || "",
+              originalPrice: p.originalPrice || "",
+              salePrice: p.salePrice || "",
+              discount,
+              description: p.description || "",
+              imageUrls,
+              category,
+              link,
+            } as Promo;
+          })
+          .filter((p): p is Promo => p !== null);
+
+        setPromos(normalized);
+      } catch (err) {
+        console.error("Failed to load promotions for homepage", err);
+      }
+    })();
+  }, []);
+
   return (
     <section className="py-24 bg-secondary/30 relative overflow-hidden">
       {/* Decorative background */}
@@ -96,7 +115,7 @@ const PromotionalSection = () => {
               {/* Image */}
               <div className="relative h-56 overflow-hidden">
                 <img
-                  src={promo.image}
+                  src={promo.imageUrls && promo.imageUrls.length > 0 ? promo.imageUrls[0] : undefined}
                   alt={promo.name}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                   loading="lazy"

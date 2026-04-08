@@ -26,31 +26,13 @@ export class PromotionsService {
     return promo;
   }
 
-  async create(payload: {
-    title: string;
-    description?: string;
-    discountPercentage: number;
-    imageUrl?: string;
-    startDate?: Date;
-    endDate?: Date;
-    isActive?: boolean;
-  }): Promise<any> {
+  // Accept a flexible payload so both legacy and new shapes work
+  async create(payload: any): Promise<any> {
     const created = new this.promotionModel(payload);
     return created.save();
   }
 
-  async update(
-    id: string,
-    payload: Partial<{
-      title: string;
-      description: string;
-      discountPercentage: number;
-      imageUrl: string;
-      startDate: Date;
-      endDate: Date;
-      isActive: boolean;
-    }>,
-  ): Promise<any> {
+  async update(id: string, payload: any): Promise<any> {
     const updated = await this.promotionModel
       .findByIdAndUpdate(id, payload, { new: true })
       .lean()

@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, ShoppingBag } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -10,6 +11,20 @@ import sofaEmerald from "@/assets/sofa-emerald.jpg";
 import sofaBurgundy from "@/assets/sofa-burgundy.jpg";
 import sofaCharcoal from "@/assets/sofa-charcoal.jpg";
 import sofaCamel from "@/assets/sofa-camel.jpg";
+import { apiGet } from "@/lib/api";
+
+type Category = "Luxury Sofas" | "Arabian Majlis" | "Luxury TV Stands";
+
+interface Product {
+  id: string;
+  name: string;
+  category: Category;
+  material: string;
+  price: string;
+  status: string;
+  imageUrl?: string;
+  imageUrls?: string[];
+}
 
 const sofas = [
   {
@@ -64,6 +79,30 @@ const sofas = [
 ];
 
 const LuxurySofas = () => {
+  const [dbProducts, setDbProducts] = useState<Product[]>([]);
+
+  useEffect(() => {
+    apiGet<any[]>("/products")
+      .then((data) => {
+        const mapped: Product[] = data
+          .map((p: any) => ({
+            id: p.id || p._id,
+            name: p.name,
+            category: p.category,
+            material: p.material,
+            price: p.price,
+            status: p.status,
+            imageUrl: p.imageUrl,
+            imageUrls: p.imageUrls || [],
+          }))
+          .filter((p) => p.category === "Luxury Sofas" && p.status === "Active");
+        setDbProducts(mapped);
+      })
+      .catch((err) => {
+        console.error("Failed to load sofas from backend", err);
+      });
+  }, []);
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -101,7 +140,67 @@ const LuxurySofas = () => {
         </div>
       </section>
 
-      {/* Sofa Grid */}
+      {/* Dynamic Sofa Grid from Admin */}
+      <section className="py-16 bg-charcoal-gradient border-b border-border/40">
+        <div className="container mx-auto px-6 lg:px-16">
+          {dbProducts.length > 0 && (
+            <div className="mb-10">
+              <h2 className="font-display text-2xl font-bold text-foreground mb-2">
+                Available Luxury Sofas
+              </h2>
+              <p className="font-body text-sm text-muted-foreground max-w-xl">
+                These sofas are managed from the admin panel and reflect your live catalog.
+              </p>
+            </div>
+          )}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {dbProducts.map((product) => {
+              const img = product.imageUrl || product.imageUrls?.[0];
+              return (
+                <motion.div
+                  key={product.id}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5 }}
+                  className="group"
+                >
+                  <div className="relative overflow-hidden mb-5">
+                    {img ? (
+                      <img
+                        src={img}
+                        alt={product.name}
+                        width={768}
+                        height={768}
+                        loading="lazy"
+                        className="w-full aspect-square object-cover transition-transform duration-700 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="w-full aspect-square bg-muted/20 border border-border flex items-center justify-center text-xs text-muted-foreground">
+                        No image
+                      </div>
+                    )}
+                    <div className="absolute inset-0 border border-primary/10 pointer-events-none group-hover:border-primary/30 transition-colors duration-300" />
+                  </div>
+                  <span className="font-accent text-xs tracking-[0.25em] uppercase text-primary block mb-1">
+                    {product.material}
+                  </span>
+                  <h3 className="font-display text-xl font-bold text-foreground mb-1">
+                    {product.name}
+                  </h3>
+                  {product.price && (
+                    <p className="font-body text-sm text-muted-foreground mb-3">
+                      {product.price}
+                    </p>
+                  )}
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* Static Sofa Grid */}
       <section className="py-20 bg-charcoal-gradient">
         <div className="container mx-auto px-6 lg:px-16">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">

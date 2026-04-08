@@ -1,9 +1,24 @@
-import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+  UploadedFiles,
+  UseInterceptors,
+} from '@nestjs/common';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { PromotionsService } from './promotions.service';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
 @Controller('promotions')
 export class PromotionsController {
-  constructor(private readonly promotionsService: PromotionsService) {}
+  constructor(
+    private readonly promotionsService: PromotionsService,
+    private readonly cloudinaryService: CloudinaryService,
+  ) {}
 
   @Get()
   async findAll(): Promise<any[]> {
@@ -18,32 +33,28 @@ export class PromotionsController {
   @Post()
   async create(
     @Body()
-    body: {
-      title: string;
-      description?: string;
-      discountPercentage: number;
-      imageUrl?: string;
-      startDate?: Date;
-      endDate?: Date;
-      isActive?: boolean;
-    },
+    body: any,
   ): Promise<any> {
     return this.promotionsService.create(body);
+  }
+
+  @Post('upload-images')
+  @UseInterceptors(FilesInterceptor('files', 3))
+  async uploadImages(@UploadedFiles() files: any[]): Promise<{ urls: string[] }> {
+    const uploads = await Promise.all(
+      (files || []).map((file) =>
+        this.cloudinaryService.uploadImage(file, 'addis-majlis/promotions'),
+      ),
+    );
+    const urls = uploads.map((u) => u.url);
+    return { urls };
   }
 
   @Put(':id')
   async update(
     @Param('id') id: string,
     @Body()
-    body: Partial<{
-      title: string;
-      description: string;
-      discountPercentage: number;
-      imageUrl: string;
-      startDate: Date;
-      endDate: Date;
-      isActive: boolean;
-    }>,
+    body: any,
   ): Promise<any> {
     return this.promotionsService.update(id, body);
   }

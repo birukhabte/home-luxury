@@ -55,3 +55,12 @@ export async function apiDelete<T = void>(path: string): Promise<T> {
   }
   return handleResponse<T>(res);
 }
+
+export async function apiUpload<T = any>(path: string, formData: FormData): Promise<T> {
+  const res = await fetch(`${API_BASE_URL}${path}`, {
+    method: 'POST',
+    body: formData,
+    credentials: 'include',
+  });
+  return handleResponse<T>(res);
+}
