@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Search, Eye, CheckCircle, Clock, XCircle } from "lucide-react";
+import { apiGet, apiPatch } from "@/lib/api";
 
 interface Inquiry {
   id: string;
@@ -19,14 +20,6 @@ interface Inquiry {
 }
 
 const initialInquiries: Inquiry[] = [
-  { id: "INQ-001", name: "Ahmed Al-Rashid", email: "ahmed@email.com", phone: "+966 50 123 4567", product: "The Sovereign Sofa", message: "I'm interested in customizing the Sovereign in a lighter shade of ivory. Do you offer fabric samples?", date: "2026-04-05", status: "New" },
-  { id: "INQ-002", name: "Fatima Hassan", email: "fatima@email.com", phone: "+966 55 234 5678", product: "Grand Heritage Majlis", message: "Looking for a full majlis setup for a new villa. Can you arrange a showroom visit?", date: "2026-04-04", status: "In Progress" },
-  { id: "INQ-003", name: "Mohammed Ali", email: "mohammed@email.com", phone: "+966 54 345 6789", product: "The Midnight Royal", message: "What are the dimensions? I have a specific space of 4m x 3m.", date: "2026-04-03", status: "Responded" },
-  { id: "INQ-004", name: "Sara Ibrahim", email: "sara@email.com", phone: "+966 56 456 7890", product: "Azure Majesty Majlis", message: "Do you deliver to Jeddah? What's the estimated delivery time?", date: "2026-04-02", status: "Responded" },
-  { id: "INQ-005", name: "Khalid Omar", email: "khalid@email.com", phone: "+966 53 567 8901", product: "The Emerald Divan", message: "Is this available in a modular configuration? I need an L-shaped version.", date: "2026-04-01", status: "New" },
-  { id: "INQ-006", name: "Noura Al-Saud", email: "noura@email.com", phone: "+966 51 678 9012", product: "Imperial Ivory Majlis", message: "Interested in bulk pricing for a hospitality project - 8 majlis sets.", date: "2026-03-30", status: "In Progress" },
-  { id: "INQ-007", name: "Omar Fahad", email: "omar@email.com", phone: "+966 52 789 0123", product: "The Bordeaux", message: "Can I get a warranty certificate? Also interested in matching coffee table.", date: "2026-03-28", status: "Closed" },
-  { id: "INQ-008", name: "Layla Ahmed", email: "layla@email.com", phone: "+966 57 890 1234", product: "Royal Amethyst Majlis", message: "Beautiful design! What's the lead time for custom colors?", date: "2026-03-27", status: "New" },
 ];
 
 const statusConfig: Record<string, { className: string; icon: typeof Clock }> = {
@@ -37,10 +30,18 @@ const statusConfig: Record<string, { className: string; icon: typeof Clock }> = 
 };
 
 const Inquiries = () => {
-  const [inquiries, setInquiries] = useState<Inquiry[]>(initialInquiries);
+  const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [viewInquiry, setViewInquiry] = useState<Inquiry | null>(null);
+
+  useEffect(() => {
+    apiGet<Inquiry[]>("/inquiries")
+      .then(setInquiries)
+      .catch((error) => {
+        console.error("Failed to load inquiries", error);
+      });
+  }, []);
 
   const filtered = inquiries.filter((inq) => {
     const matchSearch = inq.name.toLowerCase().includes(search.toLowerCase()) || inq.product.toLowerCase().includes(search.toLowerCase());
@@ -48,9 +49,14 @@ const Inquiries = () => {
     return matchSearch && matchStatus;
   });
 
-  const updateStatus = (id: string, status: Inquiry["status"]) => {
-    setInquiries(inquiries.map((inq) => (inq.id === id ? { ...inq, status } : inq)));
-    if (viewInquiry?.id === id) setViewInquiry({ ...viewInquiry, status });
+  const updateStatus = async (id: string, status: Inquiry["status"]) => {
+    try {
+      const updated = await apiPatch<Inquiry, { status: Inquiry["status"] }>(`/inquiries/${id}/status`, { status });
+      setInquiries((prev) => prev.map((inq) => (inq.id === id ? updated : inq)));
+      if (viewInquiry?.id === id) setViewInquiry(updated);
+    } catch (error) {
+      console.error("Failed to update status", error);
+    }
   };
 
   const newCount = inquiries.filter((i) => i.status === "New").length;

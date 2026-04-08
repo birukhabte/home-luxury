@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Phone, ArrowLeft, ShoppingBag } from "lucide-react";
+import { ArrowLeft, ShoppingBag } from "lucide-react";
 import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -14,42 +14,49 @@ import sofaCamel from "@/assets/sofa-camel.jpg";
 const sofas = [
   {
     name: "The Sovereign",
+    slug: "the-sovereign",
     material: "Italian Navy Velvet",
     description: "Hand-tufted navy velvet with brushed gold legs. A statement of modern opulence for the discerning homeowner.",
     image: luxurySofa,
   },
   {
     name: "The Midnight Royal",
+    slug: "the-midnight-royal",
     material: "Deep Blue Velvet",
     description: "Rich deep blue velvet upholstery over a kiln-dried hardwood frame, paired with a gold-trimmed coffee table.",
     image: sofaNavy,
   },
   {
     name: "The Ivory Empress",
+    slug: "the-ivory-empress",
     material: "Premium Italian Leather",
     description: "Cream Italian leather with nailhead detailing and gold base accents. Timeless elegance for grand living spaces.",
     image: sofaCream,
   },
   {
     name: "The Emerald Crown",
+    slug: "the-emerald-crown",
     material: "Emerald Tufted Velvet",
     description: "A curved emerald chesterfield with brass legs. Bold, regal, and impossible to ignore.",
     image: sofaEmerald,
   },
   {
     name: "The Bordeaux Classic",
+    slug: "the-bordeaux-classic",
     material: "Burgundy Velvet",
     description: "Deep burgundy chesterfield with button-tufted detailing and gold feet. Heritage craftsmanship meets modern luxury.",
     image: sofaBurgundy,
   },
   {
     name: "The Metropolitan",
+    slug: "the-metropolitan",
     material: "Charcoal Linen Blend",
     description: "An L-shaped sectional in charcoal fabric with clean modern lines. Perfect for expansive contemporary living rooms.",
     image: sofaCharcoal,
   },
   {
     name: "The Sahara",
+    slug: "the-sahara",
     material: "Camel Italian Leather",
     description: "Warm camel-toned leather with tufted back and gold legs. Mid-century sophistication for the modern connoisseur.",
     image: sofaCamel,
@@ -127,23 +134,13 @@ const LuxurySofas = () => {
                 <p className="font-body text-sm text-muted-foreground leading-relaxed mb-4">
                   {sofa.description}
                 </p>
-                {sofa.name === "The Sovereign" ? (
-                  <Link
-                    to="/sovereign-order"
-                    className="inline-flex items-center gap-2 text-primary hover:text-gold-light transition-colors font-body text-sm font-semibold tracking-[0.1em] uppercase"
-                  >
-                    <ShoppingBag className="w-3.5 h-3.5" />
-                    Order Now
-                  </Link>
-                ) : (
-                  <a
-                    href="tel:0911288820"
-                    className="inline-flex items-center gap-2 text-primary hover:text-gold-light transition-colors font-body text-sm font-semibold tracking-[0.1em] uppercase"
-                  >
-                    <Phone className="w-3.5 h-3.5" />
-                    Inquire
-                  </a>
-                )}
+                <Link
+                  to={`/sofa-order/${sofa.slug}`}
+                  className="inline-flex items-center gap-2 text-primary hover:text-gold-light transition-colors font-body text-sm font-semibold tracking-[0.1em] uppercase"
+                >
+                  <ShoppingBag className="w-3.5 h-3.5" />
+                  Order Now
+                </Link>
               </motion.div>
             ))}
           </div>
@@ -168,7 +165,6 @@ const LuxurySofas = () => {
               href="tel:0911288820"
               className="inline-flex items-center gap-3 px-10 py-5 bg-primary text-primary-foreground font-body font-bold text-sm tracking-[0.2em] uppercase transition-all duration-300 hover:bg-gold-light hover:shadow-gold"
             >
-              <Phone className="w-4 h-4" />
               Schedule Consultation
             </a>
           </motion.div>

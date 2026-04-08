@@ -1,0 +1,22 @@
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { OrdersService } from './orders.service';
+
+@Controller('orders')
+export class OrdersController {
+  constructor(private readonly ordersService: OrdersService) {}
+
+  @Get()
+  findAll(): any {
+    return this.ordersService.findAll();
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string): any {
+    return this.ordersService.findOne(id);
+  }
+
+  @Post()
+  create(@Body() body: any): any {
+    return this.ordersService.create(body);
+  }
+}

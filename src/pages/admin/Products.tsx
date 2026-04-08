@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Pencil, Trash2, Search } from "lucide-react";
+import { apiDelete, apiGet, apiPost, apiPut } from "@/lib/api";
 
 type Category = "Luxury Sofas" | "Arabian Majlis" | "Luxury TV Stands";
 type Status = "Active" | "Draft" | "Out of Stock";
@@ -21,28 +22,7 @@ interface Product {
   status: Status;
 }
 
-const initialProducts: Product[] = [
-  { id: "1", name: "The Sovereign", category: "Luxury Sofas", price: "ETB 185,000", material: "Italian Leather", status: "Active" },
-  { id: "2", name: "The Midnight Royal", category: "Luxury Sofas", price: "ETB 148,000", material: "Navy Velvet", status: "Active" },
-  { id: "3", name: "The Ivory Cloud", category: "Luxury Sofas", price: "ETB 162,000", material: "Cream Leather", status: "Active" },
-  { id: "4", name: "The Emerald Divan", category: "Luxury Sofas", price: "ETB 128,000", material: "Emerald Velvet", status: "Draft" },
-  { id: "5", name: "The Bordeaux", category: "Luxury Sofas", price: "ETB 136,000", material: "Burgundy Velvet", status: "Active" },
-  { id: "6", name: "The Charcoal Elite", category: "Luxury Sofas", price: "ETB 135,000", material: "Charcoal Bouclé", status: "Active" },
-  { id: "7", name: "The Sahara", category: "Luxury Sofas", price: "ETB 133,000", material: "Camel Suede", status: "Out of Stock" },
-  { id: "8", name: "Grand Heritage Majlis", category: "Arabian Majlis", price: "ETB 220,000", material: "Burgundy & Gold Silk", status: "Active" },
-  { id: "9", name: "Azure Majesty", category: "Arabian Majlis", price: "ETB 195,000", material: "Royal Blue Velvet", status: "Active" },
-  { id: "10", name: "Imperial Ivory", category: "Arabian Majlis", price: "ETB 250,000", material: "Cream & Gold Damask", status: "Active" },
-  { id: "11", name: "Emerald Oasis", category: "Arabian Majlis", price: "ETB 210,000", material: "Emerald Silk", status: "Draft" },
-  { id: "12", name: "Royal Amethyst", category: "Arabian Majlis", price: "ETB 225,000", material: "Deep Purple Velvet", status: "Active" },
-  { id: "13", name: "Desert Rose", category: "Arabian Majlis", price: "ETB 180,000", material: "Brown & Bronze Leather", status: "Active" },
-  { id: "14", name: "The Sultan's Court", category: "Arabian Majlis", price: "ETB 280,000", material: "Gold Brocade", status: "Active" },
-  { id: "15", name: "The Imperial Console", category: "Luxury TV Stands", price: "ETB 95,000", material: "Walnut & Brass", status: "Active" },
-  { id: "16", name: "The Monarch Stand", category: "Luxury TV Stands", price: "ETB 88,000", material: "Oak & Gold Accents", status: "Active" },
-  { id: "17", name: "The Prestige Unit", category: "Luxury TV Stands", price: "ETB 112,000", material: "Marble & Steel", status: "Active" },
-  { id: "18", name: "The Regal Cabinet", category: "Luxury TV Stands", price: "ETB 105,000", material: "Mahogany & Bronze", status: "Draft" },
-  { id: "19", name: "The Executive Media Center", category: "Luxury TV Stands", price: "ETB 98,000", material: "Ebony & Chrome", status: "Active" },
-  { id: "20", name: "The Grand Entertainment Unit", category: "Luxury TV Stands", price: "ETB 135,000", material: "Teak & Gold Leaf", status: "Out of Stock" },
-];
+const initialProducts: Product[] = [];
 
 const CATEGORIES: Category[] = ["Luxury Sofas", "Arabian Majlis", "Luxury TV Stands"];
 const STATUSES: Status[] = ["Active", "Draft", "Out of Stock"];
@@ -64,15 +44,28 @@ const Products = () => {
   const [editDialog, setEditDialog] = useState<Product | null>(null);
   const [form, setForm] = useState(emptyForm);
 
+  useEffect(() => {
+    apiGet<Product[]>("/products")
+      .then(setProducts)
+      .catch((error) => {
+        console.error("Failed to load products", error);
+      });
+  }, []);
+
   const filtered = products.filter((p) => {
     const matchSearch = p.name.toLowerCase().includes(search.toLowerCase()) || p.material.toLowerCase().includes(search.toLowerCase());
     const matchFilter = filter === "All" || p.category === filter;
     return matchSearch && matchFilter;
   });
 
-  const handleDelete = () => {
-    if (deleteDialog) {
-      setProducts(products.filter((p) => p.id !== deleteDialog.id));
+  const handleDelete = async () => {
+    if (!deleteDialog) return;
+    try {
+      await apiDelete(`/products/${deleteDialog.id}`);
+      setProducts((prev) => prev.filter((p) => p.id !== deleteDialog.id));
+    } catch (error) {
+      console.error("Failed to delete product", error);
+    } finally {
       setDeleteDialog(null);
     }
   };
@@ -87,17 +80,26 @@ const Products = () => {
     setEditDialog(p);
   };
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!form.name.trim() || !form.material.trim() || !form.price.trim()) return;
-    const newId = String(Date.now());
-    setProducts([...products, { id: newId, ...form }]);
-    setAddDialog(false);
+    try {
+      const created = await apiPost<Product, Omit<Product, "id">>("/products", form as Omit<Product, "id">);
+      setProducts((prev) => [...prev, created]);
+      setAddDialog(false);
+    } catch (error) {
+      console.error("Failed to add product", error);
+    }
   };
 
-  const handleEdit = () => {
+  const handleEdit = async () => {
     if (!editDialog || !form.name.trim()) return;
-    setProducts(products.map((p) => p.id === editDialog.id ? { ...p, ...form } : p));
-    setEditDialog(null);
+    try {
+      const updated = await apiPut<Product, Omit<Product, "id">>(`/products/${editDialog.id}`, form as Omit<Product, "id">);
+      setProducts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+      setEditDialog(null);
+    } catch (error) {
+      console.error("Failed to update product", error);
+    }
   };
 
   const ProductForm = () => (

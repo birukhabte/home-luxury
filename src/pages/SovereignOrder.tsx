@@ -10,6 +10,7 @@ import img1 from "@/assets/luxury-sofa.jpg";
 import img2 from "@/assets/sofa-navy-velvet.jpg";
 import img3 from "@/assets/sofa-cream-leather.jpg";
 import img4 from "@/assets/sofa-emerald.jpg";
+import { apiPost } from "@/lib/api";
 
 const gallery = [img1, img2, img3, img4];
 
@@ -56,10 +57,33 @@ const SovereignOrder = () => {
         window.scrollTo({ top: 0, behavior: "smooth" });
     };
 
-    const handlePaySubmit = (e: React.FormEvent) => {
+    const [submitting, setSubmitting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const handlePaySubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setStep("confirmed");
-        window.scrollTo({ top: 0, behavior: "smooth" });
+        setSubmitting(true);
+        setError(null);
+        try {
+            await apiPost("/orders", {
+                customerName: form.name,
+                phone: form.phone,
+                address: form.address,
+                productName: "The Sovereign",
+                productId: "sovereign",
+                quantity: form.qty,
+                totalAmount: total,
+                notes: form.notes,
+                paymentMethod: payMethod,
+            });
+            setStep("confirmed");
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        } catch (err: any) {
+            console.error("Failed to place order", err);
+            setError("Failed to place order. Please try again.");
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     const price = 285000;
@@ -669,6 +693,10 @@ const SovereignOrder = () => {
                                             </p>
                                         </div>
 
+                                        {error && (
+                                            <p className="font-body text-xs text-red-500">{error}</p>
+                                        )}
+
                                         {/* Actions */}
                                         <div className="flex items-center justify-between pt-2">
                                             <button
@@ -680,10 +708,11 @@ const SovereignOrder = () => {
                                             </button>
                                             <button
                                                 type="submit"
-                                                className="inline-flex items-center gap-2 px-8 py-4 bg-primary text-primary-foreground font-body font-bold text-sm tracking-[0.15em] uppercase hover:bg-gold-light hover:shadow-gold transition-all duration-300"
+                                                disabled={submitting}
+                                                className="inline-flex items-center gap-2 px-8 py-4 bg-primary text-primary-foreground font-body font-bold text-sm tracking-[0.15em] uppercase hover:bg-gold-light hover:shadow-gold transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed"
                                             >
                                                 <CheckCircle2 className="w-4 h-4" />
-                                                Confirm Order
+                                                {submitting ? "Placing Order..." : "Confirm Order"}
                                             </button>
                                         </div>
                                     </form>

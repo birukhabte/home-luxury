@@ -8,12 +8,14 @@ import LuxurySofas from "./pages/LuxurySofas.tsx";
 import ArabianMajlis from "./pages/ArabianMajlis.tsx";
 import LuxuryTVStands from "./pages/LuxuryTVStands.tsx";
 import SovereignOrder from "./pages/SovereignOrder.tsx";
+import SofaOrder from "./pages/SofaOrder.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import AdminLayout from "./layouts/AdminLayout.tsx";
 import Dashboard from "./pages/admin/Dashboard.tsx";
 import Products from "./pages/admin/Products.tsx";
 import Inquiries from "./pages/admin/Inquiries.tsx";
 import Promotions from "./pages/admin/Promotions.tsx";
+import Orders from "./pages/admin/Orders.tsx";
 
 const queryClient = new QueryClient();
 
@@ -29,10 +31,12 @@ const App = () => (
           <Route path="/arabian-majlis" element={<ArabianMajlis />} />
           <Route path="/luxury-tv-stands" element={<LuxuryTVStands />} />
           <Route path="/sovereign-order" element={<SovereignOrder />} />
+          <Route path="/sofa-order/:sofaId" element={<SofaOrder />} />
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="products" element={<Products />} />
             <Route path="promotions" element={<Promotions />} />
+            <Route path="orders" element={<Orders />} />
             <Route path="inquiries" element={<Inquiries />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

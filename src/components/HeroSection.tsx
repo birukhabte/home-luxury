@@ -1,7 +1,17 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import heroImage from "@/assets/hero-living-room.jpg";
+import { apiPost } from "@/lib/api";
 
 const HeroSection = () => {
+  const [activeAuthForm, setActiveAuthForm] = useState<"login" | "register" | null>(null);
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background Image */}
@@ -69,6 +79,22 @@ const HeroSection = () => {
             >
               Explore Collections
             </a>
+            <div className="flex gap-3 mt-2 sm:mt-0 sm:ml-auto">
+              <button
+                type="button"
+                onClick={() => setActiveAuthForm("login")}
+                className="inline-flex items-center justify-center px-5 py-3 border border-primary/60 text-primary-foreground bg-primary/90 font-body font-semibold text-xs tracking-[0.18em] uppercase transition-all duration-300 hover:bg-primary hover:shadow-gold"
+             >
+                Login
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveAuthForm("register")}
+                className="inline-flex items-center justify-center px-5 py-3 border border-primary/40 text-foreground font-body font-semibold text-xs tracking-[0.18em] uppercase transition-all duration-300 hover:bg-primary/10"
+              >
+                Register
+              </button>
+            </div>
           </motion.div>
 
           {/* Product Category Quick Links */}
@@ -98,6 +124,127 @@ const HeroSection = () => {
           </motion.div>
         </div>
       </div>
+
+      {activeAuthForm && (
+        <div className="fixed top-4 right-4 z-50 w-80 rounded-xl border border-gold-dark bg-background/95 shadow-xl backdrop-blur-lg p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-display text-lg font-semibold text-foreground">
+              {activeAuthForm === "login" ? "Login" : "Register"}
+            </h2>
+            <button
+              type="button"
+              onClick={() => setActiveAuthForm(null)}
+              className="text-sm text-muted-foreground hover:text-foreground"
+            >
+              ✕
+            </button>
+          </div>
+          <form
+            className="space-y-3"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              setMessage(null);
+              setError(null);
+
+              if (activeAuthForm === "register") {
+                if (!fullName || !email || !password) {
+                  setError("Please fill in all fields.");
+                  return;
+                }
+
+                try {
+                  setSubmitting(true);
+                  await apiPost("/users", {
+                    email,
+                    passwordHash: password, // TODO: hash on backend in a real auth flow
+                    name: fullName,
+                    role: "customer",
+                  });
+                  setMessage("Account created successfully.");
+                  setFullName("");
+                  setEmail("");
+                  setPassword("");
+                } catch (err: any) {
+                  setError(err?.message || "Failed to register. Please try again.");
+                } finally {
+                  setSubmitting(false);
+                }
+              } else {
+                if (!email || !password) {
+                  setError("Please enter your email and password.");
+                  return;
+                }
+
+                try {
+                  setSubmitting(true);
+                  const user = await apiPost("/users/login", {
+                    email,
+                    password,
+                  });
+                  setMessage(`Welcome back, ${user.name || "guest"}.`);
+                  setPassword("");
+                } catch (err: any) {
+                  setError(err?.message || "Failed to login. Please try again.");
+                } finally {
+                  setSubmitting(false);
+                }
+              }
+            }}
+          >
+            {activeAuthForm === "register" && (
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">Full Name</label>
+                <input
+                  type="text"
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                  placeholder="Enter your full name"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                />
+              </div>
+            )}
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Email</label>
+              <input
+                type="email"
+                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Password</label>
+              <input
+                type="password"
+                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                placeholder="********"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={submitting}
+              className="mt-2 w-full inline-flex items-center justify-center px-4 py-2 bg-primary text-primary-foreground font-body text-xs font-semibold tracking-[0.16em] uppercase rounded-md hover:bg-gold-light transition-colors duration-300 disabled:opacity-70 disabled:cursor-not-allowed"
+            >
+              {submitting
+                ? activeAuthForm === "login"
+                  ? "Logging in..."
+                  : "Creating Account..."
+                : activeAuthForm === "login"
+                ? "Login"
+                : "Create Account"}
+            </button>
+            {message && (
+              <p className="text-xs text-emerald-600 mt-1">{message}</p>
+            )}
+            {error && (
+              <p className="text-xs text-red-600 mt-1">{error}</p>
+            )}
+          </form>
+        </div>
+      )}
 
       {/* Decorative gold line */}
       <motion.div
