@@ -17,6 +17,12 @@ export class Product {
   @Prop({ required: true })
   price!: string;
 
+  @Prop()
+  originalPrice?: string;
+
+  @Prop()
+  discountPrice?: string;
+
   @Prop({ required: true })
   material!: string;
 

@@ -14,6 +14,7 @@ interface Promo {
   imageUrls?: string[];
   category: string;
   link: string;
+  expiryDate?: string;
 }
 
 const PromotionalSection = () => {
@@ -30,20 +31,44 @@ const PromotionalSection = () => {
 
             const category = p.category || "Luxury Sofas";
             const discountFromNumber =
-              p.discountPercentage !== undefined && p.discountPercentage !== null
+              p.discountPercentage !== undefined && p.discountPercentage !== null && p.discountPercentage > 0
                 ? `${p.discountPercentage}%`
                 : "";
 
-            const discount: string = p.discount || discountFromNumber || "";
+            // Only show discount if there's a meaningful discount value
+            const discount: string = p.discount && p.discount.trim() !== "" 
+              ? p.discount 
+              : discountFromNumber;
 
-            const link: string =
-              p.link || (category === "Arabian Majlis" ? "/arabian-majlis" : "/luxury-sofas");
+            const linkFromCategory =
+              category === "Arabian Majlis"
+                ? "/arabian-majlis"
+                : category === "Luxury TV Stands"
+                ? "/luxury-tv-stands"
+                : category === "Luxury Sofas"
+                ? "/luxury-sofas"
+                : "#collections";
+
+            const link: string = p.link || linkFromCategory;
 
             const imageUrls: string[] = p.imageUrls && Array.isArray(p.imageUrls)
               ? p.imageUrls
               : p.imageUrl
               ? [p.imageUrl]
               : [];
+
+            let expiryDate = "";
+            const rawEndDate = p.endDate || p.expiryDate;
+            if (rawEndDate) {
+              const d = new Date(rawEndDate);
+              if (!isNaN(d.getTime())) {
+                expiryDate = d.toLocaleDateString(undefined, {
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
+                });
+              }
+            }
 
             return {
               id: p.id || p._id || "",
@@ -55,9 +80,10 @@ const PromotionalSection = () => {
               imageUrls,
               category,
               link,
+              expiryDate,
             } as Promo;
           })
-          .filter((p): p is Promo => p !== null);
+          .filter((p): p is Promo => p !== null && (p.discount !== "" || (p.salePrice && p.originalPrice)));
 
         setPromos(normalized);
       } catch (err) {
@@ -120,10 +146,12 @@ const PromotionalSection = () => {
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                   loading="lazy"
                 />
-                {/* Discount Badge */}
-                <div className="absolute top-4 left-4 bg-destructive text-destructive-foreground px-3 py-1.5 font-body font-bold text-sm tracking-wide">
-                  {promo.discount} OFF
-                </div>
+                {/* Discount Badge - Only show if discount exists */}
+                {promo.discount && (
+                  <div className="absolute top-4 left-4 bg-destructive text-destructive-foreground px-3 py-1.5 font-body font-bold text-sm tracking-wide">
+                    {promo.discount} OFF
+                  </div>
+                )}
                 {/* Category Badge */}
                 <div className="absolute top-4 right-4 bg-background/80 backdrop-blur-sm text-foreground px-3 py-1 font-body text-xs tracking-[0.1em] uppercase">
                   {promo.category}
@@ -139,15 +167,24 @@ const PromotionalSection = () => {
                   {promo.description}
                 </p>
 
-                {/* Pricing */}
-                <div className="flex items-baseline gap-3 mb-5">
-                  <span className="font-display text-2xl font-bold text-primary">
-                    {promo.salePrice}
-                  </span>
-                  <span className="font-body text-sm text-muted-foreground line-through">
-                    {promo.originalPrice}
-                  </span>
-                </div>
+                {promo.expiryDate && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-4">
+                    <Clock className="w-3 h-3 text-primary" />
+                    <span>Valid until {promo.expiryDate}</span>
+                  </div>
+                )}
+
+                {/* Pricing - Only show if both prices exist */}
+                {promo.salePrice && promo.originalPrice && (
+                  <div className="flex items-baseline gap-3 mb-5">
+                    <span className="font-display text-2xl font-bold text-primary">
+                      {promo.salePrice}
+                    </span>
+                    <span className="font-body text-sm text-muted-foreground line-through">
+                      {promo.originalPrice}
+                    </span>
+                  </div>
+                )}
 
                 {/* CTA */}
                 <div className="flex items-center gap-3">

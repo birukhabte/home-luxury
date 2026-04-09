@@ -18,6 +18,8 @@ interface Product {
   name: string;
   category: Category;
   price: string;
+  originalPrice?: string;
+  discountPrice?: string;
   material: string;
   status: Status;
   imageUrl?: string;
@@ -28,6 +30,16 @@ const initialProducts: Product[] = [];
 
 const CATEGORIES: Category[] = ["Luxury Sofas", "Arabian Majlis", "Luxury TV Stands"];
 const STATUSES: Status[] = ["Active", "Draft", "Out of Stock"];
+
+// Helper function to validate URL format
+const isValidUrl = (url: string): boolean => {
+  try {
+    new URL(url);
+    return url.startsWith('http://') || url.startsWith('https://');
+  } catch {
+    return false;
+  }
+};
 
 const statusBadge: Record<Status, string> = {
   Active: "bg-green-500/20 text-green-400 border-green-500/30",
@@ -40,6 +52,8 @@ const emptyForm = {
   category: "Luxury TV Stands" as Category,
   material: "",
   price: "",
+  originalPrice: "",
+  discountPrice: "",
   status: "Active" as Status,
   imageUrl: "",
   imageUrls: [] as string[],
@@ -62,6 +76,8 @@ const Products = () => {
           name: p.name,
           category: p.category,
           price: p.price,
+          originalPrice: p.originalPrice,
+          discountPrice: p.discountPrice,
           material: p.material,
           status: p.status,
           imageUrl: p.imageUrl,
@@ -94,6 +110,7 @@ const Products = () => {
 
   const openAdd = () => {
     setForm(emptyForm);
+    setEditDialog(null);
     setAddDialog(true);
   };
 
@@ -103,22 +120,46 @@ const Products = () => {
       category: p.category,
       material: p.material,
       price: p.price,
+      originalPrice: p.originalPrice || "",
+      discountPrice: p.discountPrice || "",
       status: p.status,
       imageUrl: p.imageUrl || "",
       imageUrls: p.imageUrls || [],
     });
+    setAddDialog(false);
     setEditDialog(p);
   };
 
   const handleAdd = async () => {
-    if (!form.name.trim() || !form.material.trim() || !form.price.trim()) return;
+    if (!form.name.trim() || !form.material.trim() || !form.originalPrice.trim()) return;
+    
+    // Validate that at least one image is provided
+    const hasValidPrimaryImage = form.imageUrl && isValidUrl(form.imageUrl);
+    const hasValidAdditionalImages = form.imageUrls?.some(url => url.trim() !== "" && isValidUrl(url));
+    
+    if (!hasValidPrimaryImage && !hasValidAdditionalImages) {
+      alert("Please provide at least one valid image URL.");
+      return;
+    }
+    
+    // Use originalPrice as the canonical price; include discountPrice if set
+    const payload = {
+      ...form,
+      price: form.originalPrice,
+      originalPrice: form.originalPrice,
+      discountPrice: form.discountPrice || undefined,
+      // Clean up imageUrls to remove empty strings
+      imageUrls: form.imageUrls?.filter(url => url.trim() !== "" && isValidUrl(url)) || [],
+    };
     try {
-      const createdRaw = await apiPost<any, Omit<Product, "id">>("/products", form as Omit<Product, "id">);
+      const createdRaw = await apiPost<any, Omit<Product, "id">>("/products", payload as Omit<Product, "id">);
       const created: Product = {
         id: createdRaw.id || createdRaw._id,
         name: createdRaw.name,
         category: createdRaw.category,
         price: createdRaw.price,
+        originalPrice: createdRaw.originalPrice,
+        discountPrice: createdRaw.discountPrice,
         material: createdRaw.material,
         status: createdRaw.status,
         imageUrl: createdRaw.imageUrl,
@@ -133,13 +174,33 @@ const Products = () => {
 
   const handleEdit = async () => {
     if (!editDialog || !form.name.trim()) return;
+    
+    // Validate that at least one image is provided
+    const hasValidPrimaryImage = form.imageUrl && isValidUrl(form.imageUrl);
+    const hasValidAdditionalImages = form.imageUrls?.some(url => url.trim() !== "" && isValidUrl(url));
+    
+    if (!hasValidPrimaryImage && !hasValidAdditionalImages) {
+      alert("Please provide at least one valid image URL.");
+      return;
+    }
+    
+    const payload = {
+      ...form,
+      price: form.originalPrice || form.price,
+      originalPrice: form.originalPrice,
+      discountPrice: form.discountPrice || undefined,
+      // Clean up imageUrls to remove empty strings
+      imageUrls: form.imageUrls?.filter(url => url.trim() !== "" && isValidUrl(url)) || [],
+    };
     try {
-      const updatedRaw = await apiPut<any, Omit<Product, "id">>(`/products/${editDialog.id}`, form as Omit<Product, "id">);
+      const updatedRaw = await apiPut<any, Omit<Product, "id">>(`/products/${editDialog.id}`, payload as Omit<Product, "id">);
       const updated: Product = {
         id: updatedRaw.id || updatedRaw._id,
         name: updatedRaw.name,
         category: updatedRaw.category,
         price: updatedRaw.price,
+        originalPrice: updatedRaw.originalPrice,
+        discountPrice: updatedRaw.discountPrice,
         material: updatedRaw.material,
         status: updatedRaw.status,
         imageUrl: updatedRaw.imageUrl,
@@ -152,7 +213,14 @@ const Products = () => {
     }
   };
 
-  const ProductForm = () => (
+  const discountPct = (() => {
+    const orig = parseFloat((form.originalPrice || "").replace(/[^0-9.]/g, ""));
+    const disc = parseFloat((form.discountPrice || "").replace(/[^0-9.]/g, ""));
+    if (!orig || !disc || disc >= orig) return null;
+    return Math.round(((orig - disc) / orig) * 100);
+  })();
+
+  const renderProductForm = () => (
     <div className="space-y-4 py-2">
       <div className="space-y-1.5">
         <Label htmlFor="prod-name">Product Name</Label>
@@ -173,20 +241,201 @@ const Products = () => {
         <Label htmlFor="prod-material">Material</Label>
         <Input id="prod-material" placeholder="e.g. Walnut & Brass" value={form.material} onChange={(e) => setForm({ ...form, material: e.target.value })} className="bg-secondary border-border" />
       </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="prod-price">Price</Label>
-        <Input id="prod-price" placeholder="e.g. ETB 95,000" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} className="bg-secondary border-border" />
+
+      {/* ── Pricing Information ── */}
+      <div className="rounded-lg border border-border/60 bg-secondary/40 p-4 space-y-3">
+        <p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground">Pricing Information</p>
+        <div className="space-y-1.5">
+          <Label htmlFor="prod-orig-price">Original Price <span className="text-destructive">*</span></Label>
+          <Input
+            id="prod-orig-price"
+            placeholder="e.g. 95,000 ETB"
+            value={form.originalPrice}
+            onChange={(e) => setForm({ ...form, originalPrice: e.target.value })}
+            className="bg-secondary border-border"
+          />
+          <p className="text-[11px] text-muted-foreground">Full retail price before any discount.</p>
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="prod-disc-price">Discount Price <span className="text-muted-foreground">(optional)</span></Label>
+          <Input
+            id="prod-disc-price"
+            placeholder="e.g. 72,000 ETB"
+            value={form.discountPrice}
+            onChange={(e) => setForm({ ...form, discountPrice: e.target.value })}
+            className="bg-secondary border-border"
+          />
+        </div>
+        {/* Auto-calculated discount percentage */}
+        <div className="flex items-center gap-2">
+          <p className="text-[11px] text-muted-foreground">Discount Percentage (auto-calculated):</p>
+          {discountPct !== null ? (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/15 border border-green-500/30 text-green-400 text-xs font-bold">
+              – {discountPct}% OFF
+            </span>
+          ) : (
+            <span className="text-[11px] text-muted-foreground italic">Enter both prices to calculate</span>
+          )}
+        </div>
       </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="prod-image">Image URL</Label>
-        <Input
-          id="prod-image"
-          placeholder="https://..."
-          value={form.imageUrl}
-          onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
-          className="bg-secondary border-border"
-        />
+      
+      {/* ── Image Management ── */}
+      <div className="rounded-lg border border-border/60 bg-secondary/40 p-4 space-y-3">
+        <p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground">Image Management</p>
+        
+        {/* Primary Image URL */}
+        <div className="space-y-1.5">
+          <Label htmlFor="prod-primary-image">Primary Image URL</Label>
+          <Input
+            id="prod-primary-image"
+            placeholder="https://example.com/image1.jpg"
+            value={form.imageUrl}
+            onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
+            className={`bg-secondary border-border ${
+              form.imageUrl && !isValidUrl(form.imageUrl) ? 'border-red-400' : ''
+            }`}
+          />
+          {form.imageUrl && !isValidUrl(form.imageUrl) && (
+            <p className="text-[11px] text-red-400">Please enter a valid URL starting with http:// or https://</p>
+          )}
+          <p className="text-[11px] text-muted-foreground">Main product image (will be used as thumbnail)</p>
+        </div>
+
+        {/* Additional Image URLs */}
+        <div className="space-y-2">
+          <Label>Additional Images (up to 4 more)</Label>
+          {Array.from({ length: 4 }).map((_, index) => {
+            const currentUrls = form.imageUrls || [];
+            const value = currentUrls[index] || "";
+            
+            return (
+              <div key={index} className="flex items-center gap-2">
+                <Input
+                  placeholder={`https://example.com/image${index + 2}.jpg`}
+                  value={value}
+                  onChange={(e) => {
+                    const newUrls = [...currentUrls];
+                    if (e.target.value.trim() === "") {
+                      // Remove empty URLs and compact array
+                      newUrls.splice(index, 1);
+                    } else {
+                      // Set or update URL at index
+                      newUrls[index] = e.target.value;
+                    }
+                    // Remove any empty strings and keep only valid URLs
+                    const cleanUrls = newUrls.filter(url => url && url.trim() !== "");
+                    setForm({ ...form, imageUrls: cleanUrls });
+                  }}
+                  className={`bg-secondary border-border flex-1 ${
+                    value && !isValidUrl(value) ? 'border-red-400' : ''
+                  }`}
+                />
+                {value && !isValidUrl(value) && (
+                  <span className="text-[10px] text-red-400 whitespace-nowrap">Invalid URL</span>
+                )}
+                {value && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newUrls = [...currentUrls];
+                      newUrls.splice(index, 1);
+                      setForm({ ...form, imageUrls: newUrls });
+                    }}
+                    className="px-2 py-1 text-xs text-red-400 hover:text-red-300 border border-red-400/30 rounded hover:bg-red-400/10 transition-colors"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+            );
+          })}
+          <p className="text-[11px] text-muted-foreground">
+            Total images: {1 + (form.imageUrls?.filter(url => url.trim() !== "").length || 0)} / 5
+          </p>
+        </div>
+
+        {/* Image Preview */}
+        {(form.imageUrl || (form.imageUrls && form.imageUrls.length > 0)) && (
+          <div className="border-t border-border/40 pt-3">
+            <Label className="text-xs">Image Preview</Label>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {form.imageUrl && (
+                <div className="relative group">
+                  <img
+                    src={form.imageUrl}
+                    alt="Primary"
+                    className="w-16 h-16 object-cover rounded border border-border"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                  <div className="absolute -top-1 -left-1 bg-primary text-primary-foreground text-[8px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                    1
+                  </div>
+                </div>
+              )}
+              {form.imageUrls?.filter(url => url.trim() !== "").map((url, index) => (
+                <div key={index} className="relative group">
+                  <img
+                    src={url}
+                    alt={`Additional ${index + 1}`}
+                    className="w-16 h-16 object-cover rounded border border-border"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                  <div className="absolute -top-1 -left-1 bg-secondary text-foreground text-[8px] font-bold rounded-full w-4 h-4 flex items-center justify-center border border-border">
+                    {index + 2}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* File Upload Alternative */}
+        <div className="border-t border-border/40 pt-3">
+          <Label htmlFor="prod-images-upload">Or Upload Images (max 5 total)</Label>
+          <Input
+            id="prod-images-upload"
+            type="file"
+            multiple
+            accept="image/*"
+            className="bg-secondary border-border mt-1"
+            onChange={async (e) => {
+              const files = e.target.files;
+              if (!files) return;
+              
+              const currentTotal = 1 + (form.imageUrls?.filter(url => url.trim() !== "").length || 0);
+              const remaining = 5 - currentTotal;
+              if (remaining <= 0) return;
+
+              const selected = Array.from(files).slice(0, remaining);
+              if (selected.length === 0) return;
+
+              const data = new FormData();
+              selected.forEach((file) => data.append("files", file));
+
+              try {
+                const res = await apiUpload<{ urls: string[] }>("/products/upload-images", data);
+                const newUrls = res.urls || [];
+                setForm((prev) => ({
+                  ...prev,
+                  imageUrls: [...(prev.imageUrls || []).filter(url => url.trim() !== ""), ...newUrls].slice(0, 4),
+                }));
+              } catch (err) {
+                console.error("Failed to upload images", err);
+              } finally {
+                e.target.value = "";
+              }
+            }}
+          />
+          <p className="text-[11px] text-muted-foreground mt-1">
+            Upload files to automatically populate image URLs
+          </p>
+        </div>
       </div>
+      
       <div className="space-y-1.5">
         <Label>Status</Label>
         <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as Status })}>
@@ -197,56 +446,6 @@ const Products = () => {
             {STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
           </SelectContent>
         </Select>
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="prod-image">Primary Image URL</Label>
-        <Input
-          id="prod-image"
-          placeholder="https://..."
-          value={form.imageUrl}
-          onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
-          className="bg-secondary border-border"
-        />
-        <p className="text-[11px] text-muted-foreground mt-1">Optional main image URL for this product.</p>
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="prod-images-upload">Upload Images (max 5)</Label>
-        <Input
-          id="prod-images-upload"
-          type="file"
-          multiple
-          accept="image/*"
-          className="bg-secondary border-border"
-          onChange={async (e) => {
-            const files = e.target.files;
-            if (!files) return;
-            const remaining = 5 - (form.imageUrls?.length || 0);
-            if (remaining <= 0) return;
-
-            const selected = Array.from(files).slice(0, remaining);
-            if (selected.length === 0) return;
-
-            const data = new FormData();
-            selected.forEach((file) => data.append("files", file));
-
-            try {
-              const res = await apiUpload<{ urls: string[] }>("/products/upload-images", data);
-              setForm((prev) => ({
-                ...prev,
-                imageUrls: [...(prev.imageUrls || []), ...(res.urls || [])].slice(0, 5),
-              }));
-            } catch (err) {
-              console.error("Failed to upload images", err);
-            } finally {
-              e.target.value = "";
-            }
-          }}
-        />
-        {form.imageUrls && form.imageUrls.length > 0 && (
-          <p className="text-[11px] text-muted-foreground">
-            {form.imageUrls.length} image{form.imageUrls.length > 1 ? "s" : ""} attached.
-          </p>
-        )}
       </div>
     </div>
   );
@@ -311,11 +510,19 @@ const Products = () => {
                   <TableRow key={product.id} className="border-border">
                     <TableCell className="w-[72px]">
                       {thumb ? (
-                        <img
-                          src={thumb}
-                          alt={product.name}
-                          className="h-12 w-12 rounded-md object-cover border border-border"
-                        />
+                        <div className="relative">
+                          <img
+                            src={thumb}
+                            alt={product.name}
+                            className="h-12 w-12 rounded-md object-cover border border-border"
+                          />
+                          {/* Show image count if there are multiple images */}
+                          {((product.imageUrls?.filter(url => url.trim() !== "").length || 0) > 0) && (
+                            <div className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                              {1 + (product.imageUrls?.filter(url => url.trim() !== "").length || 0)}
+                            </div>
+                          )}
+                        </div>
                       ) : (
                         <div className="h-12 w-12 rounded-md border border-dashed border-border flex items-center justify-center text-[10px] text-muted-foreground">
                           No image
@@ -331,21 +538,21 @@ const Products = () => {
                         {product.status}
                       </Badge>
                     </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => openEdit(product)}>
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                        onClick={() => setDeleteDialog(product)}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => openEdit(product)}>
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                          onClick={() => setDeleteDialog(product)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </TableCell>
                   </TableRow>
                 );
               })}
@@ -363,7 +570,7 @@ const Products = () => {
           <DialogHeader>
             <DialogTitle className="font-display">Add New Product</DialogTitle>
           </DialogHeader>
-          <ProductForm />
+          {addDialog && renderProductForm()}
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddDialog(false)}>Cancel</Button>
             <Button onClick={handleAdd}>Add Product</Button>
@@ -377,7 +584,7 @@ const Products = () => {
           <DialogHeader>
             <DialogTitle className="font-display">Edit Product</DialogTitle>
           </DialogHeader>
-          <ProductForm />
+          {editDialog && renderProductForm()}
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditDialog(null)}>Cancel</Button>
             <Button onClick={handleEdit}>Save Changes</Button>

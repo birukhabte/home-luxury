@@ -3,12 +3,14 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Promotion, PromotionSchema } from './promotion.schema';
 import { PromotionsService } from './promotions.service';
 import { PromotionsController } from './promotions.controller';
+import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: Promotion.name, schema: PromotionSchema },
     ]),
+    CloudinaryModule,
   ],
   controllers: [PromotionsController],
   providers: [PromotionsService],

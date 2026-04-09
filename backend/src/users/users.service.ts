@@ -59,7 +59,7 @@ export class UsersService {
     }>,
   ): Promise<any> {
     const updated = await this.userModel
-      .findByIdAndUpdate(id, payload, { new: true })
+      .findByIdAndUpdate(id, payload, { returnDocument: 'after' })
       .lean()
       .exec();
 

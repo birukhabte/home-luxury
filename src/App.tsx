@@ -7,6 +7,9 @@ import Index from "./pages/Index.tsx";
 import LuxurySofas from "./pages/LuxurySofas.tsx";
 import ArabianMajlis from "./pages/ArabianMajlis.tsx";
 import LuxuryTVStands from "./pages/LuxuryTVStands.tsx";
+import ProductDetail from "./pages/ProductDetail.tsx";
+import Payment from "./pages/Payment.tsx";
+import OrderSuccess from "./pages/OrderSuccess.tsx";
 import SovereignOrder from "./pages/SovereignOrder.tsx";
 import SofaOrder from "./pages/SofaOrder.tsx";
 import NotFound from "./pages/NotFound.tsx";
@@ -30,6 +33,9 @@ const App = () => (
           <Route path="/luxury-sofas" element={<LuxurySofas />} />
           <Route path="/arabian-majlis" element={<ArabianMajlis />} />
           <Route path="/luxury-tv-stands" element={<LuxuryTVStands />} />
+          <Route path="/:productSlug/sofa-detail" element={<ProductDetail />} />
+          <Route path="/payment" element={<Payment />} />
+          <Route path="/order-success" element={<OrderSuccess />} />
           <Route path="/sovereign-order" element={<SovereignOrder />} />
           <Route path="/sofa-order/:sofaId" element={<SofaOrder />} />
           <Route path="/admin" element={<AdminLayout />}>

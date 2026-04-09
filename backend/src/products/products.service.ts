@@ -21,7 +21,7 @@ export class ProductsService {
 
   async update(id: string, payload: Omit<Product, 'id'>) {
     const updated = await this.productModel
-      .findByIdAndUpdate(id, payload, { new: true })
+      .findByIdAndUpdate(id, payload, { returnDocument: 'after' })
       .exec();
     if (!updated) {
       throw new NotFoundException('Product not found');

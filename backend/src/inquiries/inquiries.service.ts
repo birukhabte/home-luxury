@@ -25,7 +25,7 @@ export class InquiriesService {
 
   async updateStatus(id: string, status: InquiryStatus) {
     const updated = await this.inquiryModel
-      .findByIdAndUpdate(id, { status }, { new: true })
+      .findByIdAndUpdate(id, { status }, { returnDocument: 'after' })
       .exec();
     if (!updated) {
       throw new NotFoundException('Inquiry not found');

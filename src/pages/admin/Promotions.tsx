@@ -14,7 +14,12 @@ import { apiDelete, apiGet, apiPost, apiPut, apiUpload } from "@/lib/api";
 interface Promotion {
   id: string;
   name: string;
-  category: "Luxury Sofas" | "Arabian Majlis";
+  category:
+    | "Luxury Sofas"
+    | "Arabian Majlis"
+    | "Luxury TV Stands"
+    | "Dining Sets"
+    | "Bedroom Sets";
   originalPrice: string;
   salePrice: string;
   discount: string;
@@ -22,12 +27,13 @@ interface Promotion {
   link: string;
   status: "Active" | "Draft" | "Expired";
   imageUrls?: string[];
+  expiryDate?: string;
 }
 // Normalize backend promotion document into the admin UI shape
 function normalizePromotion(promo: any): Promotion {
   const id = promo.id || promo._id || "";
   const name = promo.name || promo.title || "";
-  const category = promo.category || "Luxury Sofas";
+  const category: Promotion["category"] = promo.category || "Luxury Sofas";
   const discountFromNumber =
     promo.discountPercentage !== undefined && promo.discountPercentage !== null
       ? `${promo.discountPercentage}%`
@@ -35,8 +41,16 @@ function normalizePromotion(promo: any): Promotion {
 
   const discount: string = promo.discount || discountFromNumber || "";
 
-  const link: string =
-    promo.link || (category === "Arabian Majlis" ? "/arabian-majlis" : "/luxury-sofas");
+  const linkFromCategory =
+    category === "Arabian Majlis"
+      ? "/arabian-majlis"
+      : category === "Luxury TV Stands"
+      ? "/luxury-tv-stands"
+      : category === "Luxury Sofas"
+      ? "/luxury-sofas"
+      : "#collections";
+
+  const link: string = promo.link || linkFromCategory;
 
   const isActive: boolean =
     typeof promo.isActive === "boolean" ? promo.isActive : promo.status === "Active";
@@ -54,6 +68,15 @@ function normalizePromotion(promo: any): Promotion {
     ? [promo.imageUrl]
     : [];
 
+  let expiryDate = "";
+  const rawEndDate = promo.endDate || promo.expiryDate;
+  if (rawEndDate) {
+    const d = new Date(rawEndDate);
+    if (!isNaN(d.getTime())) {
+      expiryDate = d.toISOString().slice(0, 10);
+    }
+  }
+
   return {
     id,
     name,
@@ -65,6 +88,7 @@ function normalizePromotion(promo: any): Promotion {
     link,
     status,
     imageUrls,
+    expiryDate,
   };
 }
 
@@ -84,6 +108,7 @@ const emptyPromo: Omit<Promotion, "id"> = {
   link: "/luxury-sofas",
   status: "Draft",
   imageUrls: [],
+  expiryDate: "",
 };
 
 const Promotions = () => {
@@ -94,6 +119,7 @@ const Promotions = () => {
   const [formDialog, setFormDialog] = useState(false);
   const [editingPromo, setEditingPromo] = useState<Promotion | null>(null);
   const [form, setForm] = useState<Omit<Promotion, "id">>(emptyPromo);
+  const [imageUrlInput, setImageUrlInput] = useState("");
 
   // Load promotions from backend
   useEffect(() => {
@@ -156,6 +182,7 @@ const Promotions = () => {
       link: f.link,
       status: f.status,
       imageUrls: f.imageUrls || [],
+      endDate: f.expiryDate ? new Date(f.expiryDate).toISOString() : undefined,
       // Legacy-compatible fields for backend
       title: f.name,
       discountPercentage: !isNaN(percent) ? percent : undefined,
@@ -190,7 +217,18 @@ const Promotions = () => {
     setForm((prev) => ({
       ...prev,
       [key]: value,
-      ...(key === "category" ? { link: value === "Arabian Majlis" ? "/arabian-majlis" : "/luxury-sofas" } : {}),
+      ...(key === "category"
+        ? {
+            link:
+              value === "Arabian Majlis"
+                ? "/arabian-majlis"
+                : value === "Luxury Sofas"
+                ? "/luxury-sofas"
+                : value === "Luxury TV Stands"
+                ? "/luxury-tv-stands"
+                : "#collections",
+          }
+        : {}),
     }));
   };
 
@@ -337,6 +375,9 @@ const Promotions = () => {
                   <SelectContent>
                     <SelectItem value="Luxury Sofas">Luxury Sofas</SelectItem>
                     <SelectItem value="Arabian Majlis">Arabian Majlis</SelectItem>
+                    <SelectItem value="Luxury TV Stands">Luxury TV Stands</SelectItem>
+                    <SelectItem value="Dining Sets">Dining Sets</SelectItem>
+                    <SelectItem value="Bedroom Sets">Bedroom Sets</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -352,6 +393,17 @@ const Promotions = () => {
                     <SelectItem value="Expired">Expired</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Expire Date</Label>
+                <Input
+                  type="date"
+                  value={form.expiryDate || ""}
+                  onChange={(e) => updateForm("expiryDate", e.target.value)}
+                  className="bg-secondary border-border"
+                />
               </div>
             </div>
             <div className="grid grid-cols-3 gap-4">
@@ -410,6 +462,38 @@ const Promotions = () => {
                   {form.imageUrls.length} image{form.imageUrls.length > 1 ? "s" : ""} attached.
                 </p>
               )}
+            </div>
+            <div className="space-y-2">
+              <Label>Add Image by URL</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="url"
+                  placeholder="https://..."
+                  value={imageUrlInput}
+                  onChange={(e) => setImageUrlInput(e.target.value)}
+                  className="bg-secondary border-border flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const url = imageUrlInput.trim();
+                    if (!url) return;
+                    if ((form.imageUrls?.length || 0) >= 3) return;
+                    setForm((prev) => ({
+                      ...prev,
+                      imageUrls: [...(prev.imageUrls || []), url].slice(0, 3),
+                    }));
+                    setImageUrlInput("");
+                  }}
+                >
+                  Add
+                </Button>
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                You can paste direct image URLs (including Cloudinary) here. Up to 3 images total.
+              </p>
             </div>
           </div>
           <DialogFooter>

@@ -34,7 +34,7 @@ export class PromotionsService {
 
   async update(id: string, payload: any): Promise<any> {
     const updated = await this.promotionModel
-      .findByIdAndUpdate(id, payload, { new: true })
+      .findByIdAndUpdate(id, payload, { returnDocument: 'after' })
       .lean()
       .exec();
 
