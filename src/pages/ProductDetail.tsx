@@ -46,7 +46,8 @@ const valueProps = [
   { icon: CheckCircle2, label: "Premium Materials" },
   { icon: CheckCircle2, label: "Handcrafted Quality" },
   { icon: CheckCircle2, label: "10-Year Warranty" },
-  { icon: CheckCircle2, label: "Free Delivery" },
+  { icon: CheckCircle2, label: "Free Shipping in Addis Ababa" },
+  { icon: CheckCircle2, label: "24-Hour Delivery" },
 ];
 
 function useCountdown(hours: number) {
@@ -371,6 +372,19 @@ const ProductDetail = () => {
                     <span className="font-body text-sm text-muted-foreground">{label}</span>
                   </div>
                 ))}
+              </div>
+
+              {/* Shipping Information */}
+              <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center">
+                    <CheckCircle2 className="w-5 h-5 text-primary" />
+                  </div>
+                  <h3 className="font-semibold text-foreground">Free Shipping in Addis Ababa</h3>
+                </div>
+                <p className="text-sm text-muted-foreground ml-11">
+                  Get your luxury furniture delivered within 24 hours at no extra cost within Addis Ababa city limits.
+                </p>
               </div>
 
               {/* CTAs */}

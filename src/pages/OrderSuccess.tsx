@@ -24,7 +24,7 @@ const OrderSuccess = () => {
                 Order Submitted Successfully!
               </h1>
               <p className="text-muted-foreground mb-8 max-w-md mx-auto">
-                Thank you for your order. Our sales team will contact you shortly via WhatsApp to confirm your order details and arrange delivery.
+                Thank you for your order. Our sales team will contact you shortly to confirm your order details and arrange delivery.
               </p>
 
               {/* What's Next */}
@@ -57,22 +57,13 @@ const OrderSuccess = () => {
                 <p className="text-sm text-muted-foreground">
                   Need immediate assistance?
                 </p>
-                <div className="flex gap-4 justify-center">
+                <div className="flex justify-center">
                   <a
                     href="tel:0911288820"
                     className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 border border-blue-500/30 text-blue-400 rounded-lg hover:bg-blue-500/20 transition-colors font-body text-sm font-semibold"
                   >
                     <Phone className="w-4 h-4" />
                     Call Us
-                  </a>
-                  <a
-                    href="https://wa.me/251911288820?text=Hi! I just placed an order and need assistance."
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-4 py-2 bg-green-500/10 border border-green-500/30 text-green-400 rounded-lg hover:bg-green-500/20 transition-colors font-body text-sm font-semibold"
-                  >
-                    <MessageCircle className="w-4 h-4" />
-                    WhatsApp
                   </a>
                 </div>
               </div>

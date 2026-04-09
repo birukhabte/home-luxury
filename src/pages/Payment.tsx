@@ -14,6 +14,8 @@ import {
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface OrderSummary {
@@ -32,6 +34,9 @@ const Payment = () => {
   const navigate = useNavigate();
   const [orderSummary, setOrderSummary] = useState<OrderSummary | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<"bank" | "cash" | null>(null);
+  const [selectedBank, setSelectedBank] = useState<"cbe" | null>(null);
+  const [cbeAccountNumber, setCbeAccountNumber] = useState("");
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
@@ -64,35 +69,31 @@ const Payment = () => {
 
   const handlePayment = async () => {
     if (!orderSummary || !paymentMethod) return;
+    if (paymentMethod === "bank" && (!selectedBank || !cbeAccountNumber || !receiptFile)) return;
 
     setIsProcessing(true);
 
     // Simulate payment processing
     setTimeout(() => {
-      // Create WhatsApp message with order details
-      const message = `New Order Details:
-      
-Product: ${orderSummary.productName}
-Price: ${orderSummary.productPrice}
-Quantity: ${orderSummary.quantity}
-Total: ${orderSummary.totalAmount}
+      // For now, just redirect to success page
+      // In a real implementation, you would submit the order data to your backend
+      console.log("Order submitted:", {
+        orderSummary,
+        paymentMethod,
+        selectedBank,
+        cbeAccountNumber: paymentMethod === "bank" ? cbeAccountNumber : null,
+        receiptFile: paymentMethod === "bank" ? receiptFile : null,
+      });
 
-Customer Details:
-Name: ${orderSummary.customerName}
-Phone: ${orderSummary.customerPhone}
-Email: ${orderSummary.customerEmail}
-Address: ${orderSummary.customerAddress}
-
-Payment Method: ${paymentMethod === "bank" ? "Bank Transfer" : "Cash on Delivery"}
-
-Please confirm this order and provide further instructions.`;
-
-      const whatsappUrl = `https://wa.me/251911288820?text=${encodeURIComponent(message)}`;
-      window.open(whatsappUrl, "_blank");
-
-      // Redirect to success page or home
       navigate("/order-success");
     }, 2000);
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setReceiptFile(file);
+    }
   };
 
   if (!orderSummary) {
@@ -198,20 +199,102 @@ Please confirm this order and provide further instructions.`;
                       ? "border-primary bg-primary/5"
                       : "border-border hover:border-primary/50"
                   }`}
-                  onClick={() => setPaymentMethod("bank")}
+                  onClick={() => {
+                    setPaymentMethod("bank");
+                    if (paymentMethod !== "bank") {
+                      setSelectedBank(null);
+                    }
+                  }}
                 >
                   <div className="flex items-center gap-3">
                     <CreditCard className="w-5 h-5 text-primary" />
                     <div className="flex-1">
                       <h3 className="font-semibold text-foreground">Bank Transfer</h3>
                       <p className="text-sm text-muted-foreground">
-                        Pay via bank transfer - we'll provide account details
+                        Pay via bank transfer - select your preferred bank
                       </p>
                     </div>
                     {paymentMethod === "bank" && (
                       <CheckCircle2 className="w-5 h-5 text-primary" />
                     )}
                   </div>
+                  
+                  {/* Bank Selection */}
+                  {paymentMethod === "bank" && (
+                    <div className="mt-4 ml-8 space-y-4">
+                      <p className="text-sm font-medium text-foreground mb-3">Select Bank:</p>
+                      <div
+                        className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                          selectedBank === "cbe"
+                            ? "border-primary bg-primary/10"
+                            : "border-border hover:border-primary/50"
+                        }`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedBank("cbe");
+                        }}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center">
+                            <span className="text-xs font-bold text-white">CBE</span>
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="font-medium text-foreground">Commercial Bank of Ethiopia</h4>
+                            <p className="text-xs text-muted-foreground">Account: 1000123456789</p>
+                          </div>
+                          {selectedBank === "cbe" && (
+                            <CheckCircle2 className="w-4 h-4 text-primary" />
+                          )}
+                        </div>
+                      </div>
+
+                      {/* CBE Payment Details */}
+                      {selectedBank === "cbe" && (
+                        <div className="space-y-4 p-4 bg-muted/20 rounded-lg">
+                          <div className="space-y-2">
+                            <Label htmlFor="cbe-account" className="text-sm font-medium">
+                              Your CBE Account Number *
+                            </Label>
+                            <Input
+                              id="cbe-account"
+                              type="text"
+                              value={cbeAccountNumber}
+                              onChange={(e) => setCbeAccountNumber(e.target.value)}
+                              placeholder="Enter your CBE account number"
+                              required
+                              className="h-10"
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="receipt-upload" className="text-sm font-medium">
+                              Upload Payment Receipt *
+                            </Label>
+                            <Input
+                              id="receipt-upload"
+                              type="file"
+                              accept="image/*,.pdf"
+                              onChange={handleFileUpload}
+                              required
+                              className="h-10"
+                            />
+                            {receiptFile && (
+                              <p className="text-xs text-green-600">
+                                ✓ {receiptFile.name} uploaded
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="text-xs text-muted-foreground">
+                            <p className="font-medium mb-1">Payment Instructions:</p>
+                            <p>1. Transfer the total amount to CBE Account: 1000123456789</p>
+                            <p>2. Enter your CBE account number above</p>
+                            <p>3. Upload a clear photo of your payment receipt</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Cash on Delivery */}
@@ -251,7 +334,7 @@ Please confirm this order and provide further instructions.`;
                 {/* Complete Order Button */}
                 <Button
                   onClick={handlePayment}
-                  disabled={!paymentMethod || isProcessing}
+                  disabled={!paymentMethod || (paymentMethod === "bank" && (!selectedBank || !cbeAccountNumber || !receiptFile)) || isProcessing}
                   className="w-full py-6 text-base font-semibold tracking-wide"
                 >
                   {isProcessing ? (
@@ -261,8 +344,8 @@ Please confirm this order and provide further instructions.`;
                     </div>
                   ) : (
                     <div className="flex items-center gap-2">
-                      <MessageCircle className="w-5 h-5" />
-                      Complete Order via WhatsApp
+                      <Package className="w-5 h-5" />
+                      Complete Order
                     </div>
                   )}
                 </Button>
