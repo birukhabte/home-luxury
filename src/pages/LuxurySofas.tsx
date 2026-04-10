@@ -169,9 +169,12 @@ function useCountdown(hours: number) {
 
 const LuxurySofas = () => {
   const [dbProducts, setDbProducts] = useState<Product[]>([]);
+  const [backendConnected, setBackendConnected] = useState(false);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
+    setLoading(true);
     apiGet<any[]>("/products")
       .then((data) => {
         const mapped: Product[] = data
@@ -189,9 +192,13 @@ const LuxurySofas = () => {
           }))
           .filter((p) => p.category === "Luxury Sofas" && p.status === "Active");
         setDbProducts(mapped);
+        setBackendConnected(true);
+        setLoading(false);
       })
       .catch((err) => {
         console.error("Failed to load sofas from backend", err);
+        setBackendConnected(false);
+        setLoading(false);
       });
   }, []);
 
@@ -234,16 +241,26 @@ const LuxurySofas = () => {
         </div>
       </section>
 
-      {/* Dynamic Sofa Grid from Admin */}
-      {dbProducts.length > 0 && (
-        <section className="py-16 bg-charcoal-gradient border-b border-border/40">
+      {/* Loading State */}
+      {loading && (
+        <section className="py-16 bg-charcoal-gradient">
+          <div className="container mx-auto px-6 lg:px-16 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading luxury sofas...</p>
+          </div>
+        </section>
+      )}
+
+      {/* Backend Products (when connected) */}
+      {!loading && backendConnected && dbProducts.length > 0 && (
+        <section className="py-16 bg-charcoal-gradient">
           <div className="container mx-auto px-6 lg:px-16">
             <div className="mb-10">
               <h2 className="font-display text-2xl font-bold text-foreground mb-2">
                 Available Luxury Sofas
               </h2>
               <p className="font-body text-sm text-muted-foreground max-w-xl">
-                These sofas are managed from the admin panel and reflect your live catalog.
+                Premium collection managed from our admin panel.
               </p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -313,102 +330,111 @@ const LuxurySofas = () => {
         </section>
       )}
 
-      {/* Static Sofa Grid */}
-      <section className="py-20 bg-charcoal-gradient">
-        <div className="container mx-auto px-6 lg:px-16">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {sofas.map((sofa, index) => (
-              <motion.div
-                key={sofa.name}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="group"
-              >
-                <div className="relative overflow-hidden mb-5">
-                  <img
-                    src={sofa.image}
-                    alt={`${sofa.name} - ${sofa.material} luxury sofa Addis Ababa`}
-                    width={768}
-                    height={768}
-                    loading="lazy"
-                    className="w-full aspect-square object-cover transition-transform duration-700 group-hover:scale-105"
-                  />
-                  {/* Badge */}
-                  <div className="absolute top-3 left-3 bg-primary text-primary-foreground text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">
-                    {sofa.badge}
-                  </div>
-                  {/* Stock warning */}
-                  {sofa.stock <= 2 && (
-                    <div className="absolute top-3 right-3 bg-red-500/90 text-white text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider">
-                      Only {sofa.stock} left
-                    </div>
-                  )}
-                  <div className="absolute inset-0 border border-primary/10 pointer-events-none group-hover:border-primary/30 transition-colors duration-300" />
-                </div>
-
-                <span className="font-accent text-xs tracking-[0.25em] uppercase text-primary block mb-1">
-                  {sofa.material}
-                </span>
-                <h3 className="font-display text-xl font-bold text-foreground mb-2">{sofa.name}</h3>
-                <p className="font-body text-sm text-muted-foreground leading-relaxed mb-3">
-                  {sofa.description}
+      {/* Hardcoded Sofas (when backend not connected or no products) */}
+      {!loading && (!backendConnected || dbProducts.length === 0) && (
+        <section className="py-20 bg-charcoal-gradient">
+          <div className="container mx-auto px-6 lg:px-16">
+            {!backendConnected && (
+              <div className="mb-10 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                <p className="text-yellow-400 text-sm">
+                  ⚠️ Backend not connected. Showing demo collection.
                 </p>
+              </div>
+            )}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {sofas.map((sofa, index) => (
+                <motion.div
+                  key={sofa.name}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                  className="group"
+                >
+                  <div className="relative overflow-hidden mb-5">
+                    <img
+                      src={sofa.image}
+                      alt={`${sofa.name} - ${sofa.material} luxury sofa Addis Ababa`}
+                      width={768}
+                      height={768}
+                      loading="lazy"
+                      className="w-full aspect-square object-cover transition-transform duration-700 group-hover:scale-105"
+                    />
+                    {/* Badge */}
+                    <div className="absolute top-3 left-3 bg-primary text-primary-foreground text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">
+                      {sofa.badge}
+                    </div>
+                    {/* Stock warning */}
+                    {sofa.stock <= 2 && (
+                      <div className="absolute top-3 right-3 bg-red-500/90 text-white text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider">
+                        Only {sofa.stock} left
+                      </div>
+                    )}
+                    <div className="absolute inset-0 border border-primary/10 pointer-events-none group-hover:border-primary/30 transition-colors duration-300" />
+                  </div>
 
-                {/* Pricing */}
-                <div className="flex items-baseline gap-3 mb-4">
-                  <span className="font-body text-sm text-muted-foreground line-through">
-                    Was: {sofa.originalPrice} ETB
+                  <span className="font-accent text-xs tracking-[0.25em] uppercase text-primary block mb-1">
+                    {sofa.material}
                   </span>
-                  <span className="font-display text-lg font-bold text-primary flex items-center gap-1">
-                    <Flame className="w-4 h-4" />
-                    {sofa.discountedPrice} ETB
-                  </span>
-                </div>
+                  <h3 className="font-display text-xl font-bold text-foreground mb-2">{sofa.name}</h3>
+                  <p className="font-body text-sm text-muted-foreground leading-relaxed mb-3">
+                    {sofa.description}
+                  </p>
 
-                {/* CTAs */}
-                <div className="flex flex-wrap gap-2 mb-3">
-                  <Link
-                    to={`/sofa-order/${sofa.slug}`}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground font-body font-bold text-xs tracking-[0.1em] uppercase rounded-lg hover:bg-gold-light transition-all duration-300"
-                  >
-                    <ShoppingBag className="w-3.5 h-3.5" />
-                    Order Now
-                  </Link>
-                  <Link
-                    to={`/sofa-order/${sofa.slug}?customize=true`}
-                    className="inline-flex items-center gap-2 px-4 py-2 border border-primary text-primary font-body font-semibold text-xs tracking-[0.1em] uppercase rounded-lg hover:bg-primary/10 transition-all duration-300"
-                  >
-                    <Palette className="w-3.5 h-3.5" />
-                    Customize
-                  </Link>
-                </div>
+                  {/* Pricing */}
+                  <div className="flex items-baseline gap-3 mb-4">
+                    <span className="font-body text-sm text-muted-foreground line-through">
+                      Was: {sofa.originalPrice} ETB
+                    </span>
+                    <span className="font-display text-lg font-bold text-primary flex items-center gap-1">
+                      <Flame className="w-4 h-4" />
+                      {sofa.discountedPrice} ETB
+                    </span>
+                  </div>
 
-                <div className="flex gap-2">
-                  <a
-                    href={`tel:${PHONE_NUMBER}`}
-                    className="inline-flex items-center gap-1.5 text-blue-400 hover:text-blue-300 font-body text-xs font-semibold transition-colors"
-                  >
-                    <Phone className="w-3.5 h-3.5" />
-                    Call
-                  </a>
-                  <span className="text-border">|</span>
-                  <a
-                    href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Hi! I'm interested in the ${sofa.name} sofa. Can you give me more info?`)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-green-400 hover:text-green-300 font-body text-xs font-semibold transition-colors"
-                  >
-                    <MessageCircle className="w-3.5 h-3.5" />
-                    WhatsApp
-                  </a>
-                </div>
-              </motion.div>
-            ))}
+                  {/* CTAs */}
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    <Link
+                      to={`/sofa-order/${sofa.slug}`}
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground font-body font-bold text-xs tracking-[0.1em] uppercase rounded-lg hover:bg-gold-light transition-all duration-300"
+                    >
+                      <ShoppingBag className="w-3.5 h-3.5" />
+                      Order Now
+                    </Link>
+                    <Link
+                      to={`/sofa-order/${sofa.slug}?customize=true`}
+                      className="inline-flex items-center gap-2 px-4 py-2 border border-primary text-primary font-body font-semibold text-xs tracking-[0.1em] uppercase rounded-lg hover:bg-primary/10 transition-all duration-300"
+                    >
+                      <Palette className="w-3.5 h-3.5" />
+                      Customize
+                    </Link>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <a
+                      href={`tel:${PHONE_NUMBER}`}
+                      className="inline-flex items-center gap-1.5 text-blue-400 hover:text-blue-300 font-body text-xs font-semibold transition-colors"
+                    >
+                      <Phone className="w-3.5 h-3.5" />
+                      Call
+                    </a>
+                    <span className="text-border">|</span>
+                    <a
+                      href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Hi! I'm interested in the ${sofa.name} sofa. Can you give me more info?`)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-green-400 hover:text-green-300 font-body text-xs font-semibold transition-colors"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5" />
+                      WhatsApp
+                    </a>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Value Props Section */}
       <section className="py-12 bg-charcoal-gradient border-t border-border/40">

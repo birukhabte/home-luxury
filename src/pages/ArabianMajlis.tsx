@@ -63,12 +63,37 @@ function pad(n: number) { return String(n).padStart(2, "0"); }
 
 const ArabianMajlis = () => {
   const [dbProducts, setDbProducts] = useState<Product[]>([]);
+  const [backendConnected, setBackendConnected] = useState(false);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    apiGet<any[]>("/products").then((data) => {
-      setDbProducts(data.map((p: any) => ({ id: p.id || p._id, name: p.name, category: p.category, material: p.material, price: p.price, originalPrice: p.originalPrice, discountPrice: p.discountPrice, status: p.status, imageUrl: p.imageUrl, imageUrls: p.imageUrls || [] })).filter((p) => p.category === "Arabian Majlis" && p.status === "Active"));
-    }).catch(err => console.error("Failed to load majlis products from backend", err));
+    setLoading(true);
+    apiGet<any[]>("/products")
+      .then((data) => {
+        const mapped: Product[] = data
+          .map((p: any) => ({
+            id: p.id || p._id,
+            name: p.name,
+            category: p.category,
+            material: p.material,
+            price: p.price,
+            originalPrice: p.originalPrice,
+            discountPrice: p.discountPrice,
+            status: p.status,
+            imageUrl: p.imageUrl,
+            imageUrls: p.imageUrls || [],
+          }))
+          .filter((p) => p.category === "Arabian Majlis" && p.status === "Active");
+        setDbProducts(mapped);
+        setBackendConnected(true);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Failed to load majlis products from backend", err);
+        setBackendConnected(false);
+        setLoading(false);
+      });
   }, []);
 
   return (
@@ -86,25 +111,70 @@ const ArabianMajlis = () => {
         </div>
       </section>
 
-      {dbProducts.length > 0 && (
-        <section className="py-16 bg-charcoal-gradient border-b border-border/40">
+      {/* Loading State */}
+      {loading && (
+        <section className="py-16 bg-charcoal-gradient">
+          <div className="container mx-auto px-6 lg:px-16 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading Arabian Majlis collection...</p>
+          </div>
+        </section>
+      )}
+
+      {/* Backend Products (when connected) */}
+      {!loading && backendConnected && dbProducts.length > 0 && (
+        <section className="py-16 bg-charcoal-gradient">
           <div className="container mx-auto px-6 lg:px-16">
-            <div className="mb-10"><h2 className="font-display text-2xl font-bold text-foreground mb-2">Available Majlis Sets</h2><p className="font-body text-sm text-muted-foreground max-w-xl">These Majlis sets are managed from the admin panel and reflect your live catalog.</p></div>
+            <div className="mb-10">
+              <h2 className="font-display text-2xl font-bold text-foreground mb-2">
+                Available Majlis Sets
+              </h2>
+              <p className="font-body text-sm text-muted-foreground max-w-xl">
+                Premium collection managed from our admin panel.
+              </p>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {dbProducts.map((product) => {
                 const img = product.imageUrl || product.imageUrls?.[0];
                 return (
-                  <motion.div key={product.id} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }} className="group cursor-pointer" onClick={() => navigate(getProductDetailUrl(product.name))}>
+                  <motion.div
+                    key={product.id}
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5 }}
+                    className="group cursor-pointer"
+                    onClick={() => navigate(getProductDetailUrl(product.name))}
+                  >
                     <div className="relative overflow-hidden mb-5">
-                      {img ? <img src={img} alt={product.name} width={768} height={768} loading="lazy" className="w-full aspect-square object-cover transition-transform duration-700 group-hover:scale-105" /> : <div className="w-full aspect-square bg-muted/20 border border-border flex items-center justify-center text-xs text-muted-foreground">No image</div>}
+                      {img ? (
+                        <img
+                          src={img}
+                          alt={product.name}
+                          width={768}
+                          height={768}
+                          loading="lazy"
+                          className="w-full aspect-square object-cover transition-transform duration-700 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="w-full aspect-square bg-muted/20 border border-border flex items-center justify-center text-xs text-muted-foreground">
+                          No image
+                        </div>
+                      )}
                       {/* Only show Limited Offer badge if there's a discount */}
                       {product.discountPrice && product.originalPrice && (
-                        <div className="absolute top-3 left-3 bg-red-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider flex items-center gap-1"><Flame className="w-3 h-3" /> Limited Offer</div>
+                        <div className="absolute top-3 left-3 bg-red-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider flex items-center gap-1">
+                          <Flame className="w-3 h-3" /> Limited Offer
+                        </div>
                       )}
                       <div className="absolute inset-0 border border-primary/10 pointer-events-none group-hover:border-primary/30 transition-colors duration-300" />
                     </div>
-                    <span className="font-accent text-xs tracking-[0.25em] uppercase text-primary block mb-1">{product.material}</span>
-                    <h3 className="font-display text-xl font-bold text-foreground mb-1">{product.name}</h3>
+                    <span className="font-accent text-xs tracking-[0.25em] uppercase text-primary block mb-1">
+                      {product.material}
+                    </span>
+                    <h3 className="font-display text-xl font-bold text-foreground mb-1">
+                      {product.name}
+                    </h3>
                     {/* Show discount pricing if available, otherwise show regular price */}
                     {product.discountPrice && product.originalPrice ? (
                       <div className="flex items-baseline gap-2 mb-3">
@@ -118,7 +188,10 @@ const ArabianMajlis = () => {
                     ) : product.price ? (
                       <p className="font-body text-sm text-muted-foreground mb-3">{product.price}</p>
                     ) : null}
-                    <span className="inline-flex items-center gap-1.5 text-primary hover:text-gold-light transition-colors font-body text-sm font-semibold tracking-[0.1em] uppercase"><ShoppingBag className="w-3.5 h-3.5" /> View Details →</span>
+                    <span className="inline-flex items-center gap-1.5 text-primary hover:text-gold-light transition-colors font-body text-sm font-semibold tracking-[0.1em] uppercase">
+                      <ShoppingBag className="w-3.5 h-3.5" />
+                      View Details →
+                    </span>
                   </motion.div>
                 );
               })}
@@ -127,42 +200,107 @@ const ArabianMajlis = () => {
         </section>
       )}
 
-      <section className="py-20 bg-charcoal-gradient">
-        <div className="container mx-auto px-6 lg:px-16">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {majlisCollection.map((item, index) => (
-              <motion.div key={item.name} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: index * 0.1 }} className="group">
-                <div className="relative overflow-hidden mb-5">
-                  <img src={item.image} alt={`${item.name} - ${item.style} Arabian Majlis Addis Ababa`} width={768} height={768} loading="lazy" className="w-full aspect-square object-cover transition-transform duration-700 group-hover:scale-105" />
-                  <div className="absolute top-3 left-3 bg-primary text-primary-foreground text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">{item.badge}</div>
-                  {item.stock <= 2 && <div className="absolute top-3 right-3 bg-red-500/90 text-white text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider">Only {item.stock} left</div>}
-                  <div className="absolute inset-0 border border-primary/10 pointer-events-none group-hover:border-primary/30 transition-colors duration-300" />
-                </div>
-                <span className="font-accent text-xs tracking-[0.25em] uppercase text-primary block mb-1">{item.style}</span>
-                <h3 className="font-display text-xl font-bold text-foreground mb-2">{item.name}</h3>
-                <p className="font-body text-sm text-muted-foreground leading-relaxed mb-3">{item.description}</p>
-                <div className="flex items-baseline gap-3 mb-4">
-                  <span className="font-body text-sm text-muted-foreground line-through">Was: {item.originalPrice} ETB</span>
-                  <span className="font-display text-lg font-bold text-primary flex items-center gap-1"><Flame className="w-4 h-4" /> {item.discountedPrice} ETB</span>
-                </div>
-                <div className="flex flex-wrap gap-2 mb-3">
-                  <a href={`https://wa.me/${WA}?text=${encodeURIComponent(`Hi! I'd like to order the ${item.name} (${item.style}) Majlis set. Please confirm availability.`)}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground font-body font-bold text-xs tracking-[0.1em] uppercase rounded-lg hover:bg-gold-light transition-all">
-                    <ShoppingBag className="w-3.5 h-3.5" /> Order Now
-                  </a>
-                  <a href={`https://wa.me/${WA}?text=${encodeURIComponent(`Hi! I'd like to customize the ${item.name} Majlis. Can we discuss colors and fabric options?`)}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 border border-primary text-primary font-body font-semibold text-xs tracking-[0.1em] uppercase rounded-lg hover:bg-primary/10 transition-all">
-                    <Palette className="w-3.5 h-3.5" /> Customize & Order
-                  </a>
-                </div>
-                <div className="flex gap-2">
-                  <a href={`tel:${TEL}`} className="inline-flex items-center gap-1.5 text-blue-400 hover:text-blue-300 font-body text-xs font-semibold transition-colors"><Phone className="w-3.5 h-3.5" /> Call</a>
-                  <span className="text-border">|</span>
-                  <a href={`https://wa.me/${WA}?text=${encodeURIComponent(`Hi! I'm interested in the ${item.name} Majlis. Can you tell me more?`)}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-green-400 hover:text-green-300 font-body text-xs font-semibold transition-colors"><MessageCircle className="w-3.5 h-3.5" /> WhatsApp</a>
-                </div>
-              </motion.div>
-            ))}
+      {/* Hardcoded Majlis Collection (when backend not connected or no products) */}
+      {!loading && (!backendConnected || dbProducts.length === 0) && (
+        <section className="py-20 bg-charcoal-gradient">
+          <div className="container mx-auto px-6 lg:px-16">
+            {!backendConnected && (
+              <div className="mb-10 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                <p className="text-yellow-400 text-sm">
+                  ⚠️ Backend not connected. Showing demo collection.
+                </p>
+              </div>
+            )}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {majlisCollection.map((item, index) => (
+                <motion.div
+                  key={item.name}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                  className="group"
+                >
+                  <div className="relative overflow-hidden mb-5">
+                    <img
+                      src={item.image}
+                      alt={`${item.name} - ${item.style} Arabian Majlis Addis Ababa`}
+                      width={768}
+                      height={768}
+                      loading="lazy"
+                      className="w-full aspect-square object-cover transition-transform duration-700 group-hover:scale-105"
+                    />
+                    <div className="absolute top-3 left-3 bg-primary text-primary-foreground text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">
+                      {item.badge}
+                    </div>
+                    {item.stock <= 2 && (
+                      <div className="absolute top-3 right-3 bg-red-500/90 text-white text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider">
+                        Only {item.stock} left
+                      </div>
+                    )}
+                    <div className="absolute inset-0 border border-primary/10 pointer-events-none group-hover:border-primary/30 transition-colors duration-300" />
+                  </div>
+                  <span className="font-accent text-xs tracking-[0.25em] uppercase text-primary block mb-1">
+                    {item.style}
+                  </span>
+                  <h3 className="font-display text-xl font-bold text-foreground mb-2">{item.name}</h3>
+                  <p className="font-body text-sm text-muted-foreground leading-relaxed mb-3">
+                    {item.description}
+                  </p>
+                  <div className="flex items-baseline gap-3 mb-4">
+                    <span className="font-body text-sm text-muted-foreground line-through">
+                      Was: {item.originalPrice} ETB
+                    </span>
+                    <span className="font-display text-lg font-bold text-primary flex items-center gap-1">
+                      <Flame className="w-4 h-4" />
+                      {item.discountedPrice} ETB
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    <a
+                      href={`https://wa.me/${WA}?text=${encodeURIComponent(`Hi! I'd like to order the ${item.name} (${item.style}) Majlis set. Please confirm availability.`)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground font-body font-bold text-xs tracking-[0.1em] uppercase rounded-lg hover:bg-gold-light transition-all"
+                    >
+                      <ShoppingBag className="w-3.5 h-3.5" />
+                      Order Now
+                    </a>
+                    <a
+                      href={`https://wa.me/${WA}?text=${encodeURIComponent(`Hi! I'd like to customize the ${item.name} Majlis. Can we discuss colors and fabric options?`)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-4 py-2 border border-primary text-primary font-body font-semibold text-xs tracking-[0.1em] uppercase rounded-lg hover:bg-primary/10 transition-all"
+                    >
+                      <Palette className="w-3.5 h-3.5" />
+                      Customize & Order
+                    </a>
+                  </div>
+                  <div className="flex gap-2">
+                    <a
+                      href={`tel:${TEL}`}
+                      className="inline-flex items-center gap-1.5 text-blue-400 hover:text-blue-300 font-body text-xs font-semibold transition-colors"
+                    >
+                      <Phone className="w-3.5 h-3.5" />
+                      Call
+                    </a>
+                    <span className="text-border">|</span>
+                    <a
+                      href={`https://wa.me/${WA}?text=${encodeURIComponent(`Hi! I'm interested in the ${item.name} Majlis. Can you tell me more?`)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-green-400 hover:text-green-300 font-body text-xs font-semibold transition-colors"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5" />
+                      WhatsApp
+                    </a>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       <section className="py-12 bg-charcoal-gradient border-t border-border/40">
         <div className="container mx-auto px-6 lg:px-16">

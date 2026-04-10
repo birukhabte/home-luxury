@@ -75,9 +75,12 @@ const tvStands = [
 
 const LuxuryTVStands = () => {
   const [dbProducts, setDbProducts] = useState<Product[]>([]);
+  const [backendConnected, setBackendConnected] = useState(false);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
+    setLoading(true);
     apiGet<any[]>("/products")
       .then((data) => {
         const mapped: Product[] = data
@@ -95,9 +98,13 @@ const LuxuryTVStands = () => {
           }))
           .filter((p) => p.category === "Luxury TV Stands" && p.status === "Active");
         setDbProducts(mapped);
+        setBackendConnected(true);
+        setLoading(false);
       })
       .catch((err) => {
         console.error("Failed to load TV stands from backend", err);
+        setBackendConnected(false);
+        setLoading(false);
       });
   }, []);
 
@@ -138,70 +145,26 @@ const LuxuryTVStands = () => {
         </div>
       </section>
 
-      {/* TV Stands Grid */}
-      <section className="py-20 bg-charcoal-gradient">
-        <div className="container mx-auto px-6 lg:px-16">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {tvStands.map((stand, index) => (
-              <motion.div
-                key={stand.name}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="group"
-              >
-                <div className="relative overflow-hidden mb-5">
-                  <img
-                    src={stand.image}
-                    alt={`${stand.name} - ${stand.material} luxury TV stand Addis Ababa`}
-                    width={768}
-                    height={768}
-                    loading="lazy"
-                    className="w-full aspect-square object-cover transition-transform duration-700 group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 border border-primary/10 pointer-events-none group-hover:border-primary/30 transition-colors duration-300" />
-                </div>
-                <span className="font-accent text-xs tracking-[0.25em] uppercase text-primary block mb-1">
-                  {stand.material}
-                </span>
-                <h3 className="font-display text-xl font-bold text-foreground mb-2">
-                  {stand.name}
-                </h3>
-                <p className="font-body text-sm text-muted-foreground leading-relaxed mb-3">
-                  {stand.description}
-                </p>
-                <ul className="space-y-1 mb-4">
-                  {stand.features.map((feature) => (
-                    <li key={feature} className="font-body text-xs text-muted-foreground flex items-start gap-2">
-                      <span className="text-primary mt-1">•</span>
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-                <a
-                  href="tel:0911288820"
-                  className="inline-flex items-center gap-2 text-primary hover:text-gold-light transition-colors font-body text-sm font-semibold tracking-[0.1em] uppercase"
-                >
-                  <Phone className="w-3.5 h-3.5" />
-                  Inquire
-                </a>
-              </motion.div>
-            ))}
+      {/* Loading State */}
+      {loading && (
+        <section className="py-16 bg-charcoal-gradient">
+          <div className="container mx-auto px-6 lg:px-16 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading luxury TV stands...</p>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
-      {/* Dynamic TV Stands Grid from Admin */}
-      {dbProducts.length > 0 && (
-        <section className="py-16 bg-charcoal-gradient border-t border-border/40">
+      {/* Backend Products (when connected) */}
+      {!loading && backendConnected && dbProducts.length > 0 && (
+        <section className="py-16 bg-charcoal-gradient">
           <div className="container mx-auto px-6 lg:px-16">
             <div className="mb-10">
               <h2 className="font-display text-2xl font-bold text-foreground mb-2">
                 Available TV Stands
               </h2>
               <p className="font-body text-sm text-muted-foreground max-w-xl">
-                These TV stands are managed from the admin panel and reflect your live catalog.
+                Premium collection managed from our admin panel.
               </p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -259,16 +222,76 @@ const LuxuryTVStands = () => {
                     ) : product.price ? (
                       <p className="font-body text-sm text-muted-foreground mb-4">{product.price}</p>
                     ) : null}
-                    <a
-                      href="tel:0911288820"
-                      className="inline-flex items-center gap-2 text-primary hover:text-gold-light transition-colors font-body text-sm font-semibold tracking-[0.1em] uppercase"
-                    >
+                    <span className="inline-flex items-center gap-1.5 text-primary hover:text-gold-light transition-colors font-body text-sm font-semibold tracking-[0.1em] uppercase">
                       <Phone className="w-3.5 h-3.5" />
-                      Inquire
-                    </a>
+                      View Details →
+                    </span>
                   </motion.div>
                 );
               })}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Hardcoded TV Stands (when backend not connected or no products) */}
+      {!loading && (!backendConnected || dbProducts.length === 0) && (
+        <section className="py-20 bg-charcoal-gradient">
+          <div className="container mx-auto px-6 lg:px-16">
+            {!backendConnected && (
+              <div className="mb-10 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                <p className="text-yellow-400 text-sm">
+                  ⚠️ Backend not connected. Showing demo collection.
+                </p>
+              </div>
+            )}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {tvStands.map((stand, index) => (
+                <motion.div
+                  key={stand.name}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                  className="group"
+                >
+                  <div className="relative overflow-hidden mb-5">
+                    <img
+                      src={stand.image}
+                      alt={`${stand.name} - ${stand.material} luxury TV stand Addis Ababa`}
+                      width={768}
+                      height={768}
+                      loading="lazy"
+                      className="w-full aspect-square object-cover transition-transform duration-700 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 border border-primary/10 pointer-events-none group-hover:border-primary/30 transition-colors duration-300" />
+                  </div>
+                  <span className="font-accent text-xs tracking-[0.25em] uppercase text-primary block mb-1">
+                    {stand.material}
+                  </span>
+                  <h3 className="font-display text-xl font-bold text-foreground mb-2">
+                    {stand.name}
+                  </h3>
+                  <p className="font-body text-sm text-muted-foreground leading-relaxed mb-3">
+                    {stand.description}
+                  </p>
+                  <ul className="space-y-1 mb-4">
+                    {stand.features.map((feature) => (
+                      <li key={feature} className="font-body text-xs text-muted-foreground flex items-start gap-2">
+                        <span className="text-primary mt-1">•</span>
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <a
+                    href="tel:0911288820"
+                    className="inline-flex items-center gap-2 text-primary hover:text-gold-light transition-colors font-body text-sm font-semibold tracking-[0.1em] uppercase"
+                  >
+                    <Phone className="w-3.5 h-3.5" />
+                    Inquire
+                  </a>
+                </motion.div>
+              ))}
             </div>
           </div>
         </section>
