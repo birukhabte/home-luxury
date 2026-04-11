@@ -189,7 +189,7 @@ const PromotionalSection = () => {
                 {/* CTA */}
                 <div className="flex items-center gap-3">
                   <a
-                    href="tel:0911288820"
+                    href="tel:0995871152"
                     className="flex-1 inline-flex items-center justify-center px-6 py-3 bg-primary text-primary-foreground font-body font-semibold text-xs tracking-[0.15em] uppercase transition-all duration-300 hover:bg-gold-light"
                   >
                     Claim This Deal

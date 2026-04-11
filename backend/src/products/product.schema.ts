@@ -29,6 +29,9 @@ export class Product {
   @Prop()
   description?: string;
 
+  @Prop({ type: [String], default: [] })
+  colors?: string[];
+
   @Prop()
   imageUrl?: string;
 

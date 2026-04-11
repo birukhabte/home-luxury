@@ -25,6 +25,11 @@ export class ProductsController {
   findAll() {
     return this.productsService.findAll();
   }
+  @Get('discounted')
+  findDiscounted() {
+    return this.productsService.findDiscounted();
+  }
+
 
   @Post()
   create(@Body() body: Omit<Product, 'id'>) {

@@ -32,15 +32,18 @@ interface Product {
   name: string;
   category: Category;
   material: string;
+  description?: string;
   price: string;
   originalPrice?: string;
   discountPrice?: string;
   status: string;
   imageUrl?: string;
+  imageColor?: string;
   imageUrls?: string[];
+  imageColors?: string[];
 }
 
-const PHONE_NUMBER = "0911288820";
+const PHONE_NUMBER = "0995871152";
 
 const valueProps = [
   { icon: CheckCircle2, label: "Premium Materials" },
@@ -98,6 +101,41 @@ const ProductDetail = () => {
     ...(product.imageUrls?.filter((u) => u !== product.imageUrl) ?? []),
   ].filter(Boolean) : [];
 
+  // Get all colors (matching the exact image order)
+  const allColors = product ? (() => {
+    const colors: string[] = [];
+    
+    // If we have a primary image, add its color (or empty string)
+    if (product.imageUrl) {
+      colors.push(product.imageColor || "");
+    }
+    
+    // Add colors for additional images
+    if (product.imageUrls) {
+      const additionalImages = product.imageUrls.filter((u) => u !== product.imageUrl);
+      additionalImages.forEach((_, index) => {
+        colors.push(product.imageColors?.[index] || "");
+      });
+    }
+    
+    return colors;
+  })() : [];
+
+  // Get current color based on selected image
+  const getCurrentColor = () => {
+    console.log('Current image index:', currentImageIndex);
+    console.log('All images:', allImages);
+    console.log('All colors:', allColors);
+    console.log('Product imageColor:', product?.imageColor);
+    console.log('Product imageColors:', product?.imageColors);
+    
+    if (allColors.length > currentImageIndex && allColors[currentImageIndex]) {
+      console.log('Selected color:', allColors[currentImageIndex]);
+      return allColors[currentImageIndex];
+    }
+    return null;
+  };
+
   const { h, m, s } = useCountdown(47);
 
   useEffect(() => {
@@ -119,17 +157,21 @@ const ProductDetail = () => {
         });
 
         if (foundProduct) {
+          console.log('Found product from backend:', foundProduct);
           setProduct({
             id: foundProduct.id || foundProduct._id,
             name: foundProduct.name,
             category: foundProduct.category,
             material: foundProduct.material,
+            description: foundProduct.description,
             price: foundProduct.price,
             originalPrice: foundProduct.originalPrice,
             discountPrice: foundProduct.discountPrice,
             status: foundProduct.status,
             imageUrl: foundProduct.imageUrl,
+            imageColor: foundProduct.imageColor,
             imageUrls: foundProduct.imageUrls || [],
+            imageColors: foundProduct.imageColors || [],
           });
         } else {
           setError("Product not found");
@@ -315,15 +357,31 @@ const ProductDetail = () => {
             <div className="space-y-6">
               {/* Header */}
               <div>
-                <span className="font-accent text-sm tracking-[0.25em] uppercase text-primary block mb-2">
-                  {product.material}
-                </span>
-                <h1 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
+                <h1 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-2">
                   {product.name}
                 </h1>
-                <p className="font-body text-muted-foreground">
-                  Premium {product.category.toLowerCase()} crafted with the finest materials and attention to detail.
-                </p>
+                
+                {/* Color Display */}
+                {getCurrentColor() && (
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="font-accent text-sm tracking-[0.2em] uppercase text-primary">
+                      Color:
+                    </span>
+                    <span className="font-body text-sm text-foreground bg-primary/10 px-3 py-1 rounded-full border border-primary/30">
+                      {getCurrentColor()}
+                    </span>
+                  </div>
+                )}
+                
+                {product.description ? (
+                  <p className="font-body text-muted-foreground leading-relaxed">
+                    {product.description}
+                  </p>
+                ) : (
+                  <p className="font-body text-muted-foreground">
+                    Premium {product.category.toLowerCase()} crafted with the finest materials and attention to detail.
+                  </p>
+                )}
               </div>
 
               {/* Urgency Elements - Only show if there's a discount */}
@@ -401,7 +459,7 @@ const ProductDetail = () => {
                   className="w-full flex items-center justify-center gap-3 px-8 py-4 border border-primary text-primary font-body font-semibold text-sm tracking-[0.1em] uppercase rounded-xl hover:bg-primary/10 transition-all duration-300"
                 >
                   <Palette className="w-5 h-5" />
-                  Customize & Order
+                  Customize and Order Call 0995871152
                 </button>
               </div>
 

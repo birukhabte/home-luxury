@@ -58,7 +58,7 @@ const ContactSection = () => {
               <Phone className="w-6 h-6 text-primary mx-auto mb-4" />
               <h3 className="font-display text-lg font-semibold text-foreground mb-2">Call Us</h3>
               <a
-                href="tel:0911288820"
+                href="tel:0995871152"
                 className="font-body text-sm text-primary hover:text-gold-light transition-colors"
               >
                 091 128 8820
@@ -91,7 +91,7 @@ const ContactSection = () => {
             className="text-center"
           >
             <a
-              href="tel:0911288820"
+              href="tel:0995871152"
               className="inline-flex items-center gap-3 px-10 py-5 bg-primary text-primary-foreground font-body font-bold text-sm tracking-[0.2em] uppercase transition-all duration-300 hover:bg-gold-light hover:shadow-gold"
             >
               <Phone className="w-4 h-4" />

@@ -65,10 +65,7 @@ const Navbar = () => {
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      const category = searchQuery.toLowerCase().includes("majlis") ? "arabian-majlis" :
-                     searchQuery.toLowerCase().includes("tv") ? "luxury-tv-stands" :
-                     "luxury-sofas";
-      navigate(`/${category}?search=${encodeURIComponent(searchQuery)}`);
+      navigate(`/products?search=${encodeURIComponent(searchQuery)}`);
       setShowSearchResults(false);
       setSearchQuery("");
     }
@@ -127,11 +124,8 @@ const Navbar = () => {
       params.set("tags", filters.specialTags.join(","));
     }
 
-    const category = filters.productType === "Arabian Majlis" ? "arabian-majlis" :
-                    filters.productType === "Luxury TV Stands" ? "luxury-tv-stands" :
-                    "luxury-sofas";
-    
-    navigate(`/${category}?${params.toString()}`);
+    // Navigate to the unified products page with filters
+    navigate(`/products?${params.toString()}`);
     setShowFilters(false);
   };
 
@@ -145,6 +139,14 @@ const Navbar = () => {
         <Link to="/" className="font-display text-lg md:text-xl font-bold text-foreground tracking-wide leading-tight">
           Home Luxury<span className="text-primary"> Furniture</span>
         </Link>
+
+        {/* Navigation Links */}
+        <div className="hidden lg:flex items-center gap-8">
+          <Link to="/promotions" className="text-sm font-medium text-red-500 hover:text-red-400 transition-colors flex items-center gap-1">
+            <Flame className="w-4 h-4" />
+            Promotions
+          </Link>
+        </div>
 
         <div className="hidden md:flex items-center gap-6">
           {/* Search Bar */}
@@ -379,7 +381,7 @@ const Navbar = () => {
           </div>
           
           <a
-            href="tel:0911288820"
+            href="tel:0995871152"
             className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground font-body font-semibold text-xs tracking-[0.15em] uppercase hover:bg-gold-light transition-colors rounded"
           >
             <Phone className="w-3.5 h-3.5" />
@@ -388,7 +390,7 @@ const Navbar = () => {
         </div>
 
         <a
-          href="tel:0911288820"
+          href="tel:0995871152"
           className="md:hidden inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground font-body font-semibold text-xs tracking-[0.1em] uppercase"
         >
           <Phone className="w-3.5 h-3.5" />
@@ -465,7 +467,7 @@ const Navbar = () => {
 
                 try {
                   setSubmitting(true);
-                  const user = await apiPost("/users/login", {
+                  const user: any = await apiPost("/users/login", {
                     email,
                     password,
                   });

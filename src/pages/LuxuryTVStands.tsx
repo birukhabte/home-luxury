@@ -1,7 +1,26 @@
-import { motion } from "framer-motion";
-import { Phone, ArrowLeft } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  ArrowLeft,
+  ShoppingBag,
+  X,
+  Phone,
+  MessageCircle,
+  Clock,
+  Flame,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Star,
+  Palette,
+  Ruler,
+  Sparkles,
+  Monitor,
+  Zap,
+  Shield,
+  Settings,
+} from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { apiGet } from "@/lib/api";
@@ -29,49 +48,83 @@ interface Product {
   imageUrls?: string[];
 }
 
+const WHATSAPP_NUMBER = "251911288820";
+const PHONE_NUMBER = "0995871152";
+
 const tvStands = [
   {
     name: "The Imperial Console",
+    slug: "the-imperial-console",
     material: "Walnut & Brass",
     description: "Premium walnut wood with brass inlay details and soft-close drawers. A centerpiece for your entertainment space.",
-    features: ["Soft-close drawers", "Cable management system", "Tempered glass shelves"],
     image: tvMain,
+    originalPrice: "45,000",
+    discountedPrice: "32,000",
+    stock: 3,
+    badge: "Best Seller",
   },
   {
     name: "The Monarch Stand",
+    slug: "the-monarch-stand", 
     material: "Oak & Gold Accents",
     description: "Solid oak construction with gold-plated handles and integrated LED lighting. Modern luxury meets functionality.",
-    features: ["Integrated LED lighting", "Adjustable shelving", "Premium oak finish"],
     image: tv2,
+    originalPrice: "38,000",
+    discountedPrice: "28,500",
+    stock: 2,
+    badge: "Limited Offer",
   },
   {
     name: "The Prestige Unit",
+    slug: "the-prestige-unit",
     material: "Marble & Steel",
     description: "Italian marble top with brushed steel frame. Contemporary elegance for the modern home.",
-    features: ["Italian marble surface", "Steel frame construction", "Open and closed storage"],
     image: tv3,
+    originalPrice: "52,000",
+    discountedPrice: "39,000",
+    stock: 1,
+    badge: "Only 1 Left",
   },
   {
     name: "The Regal Cabinet",
+    slug: "the-regal-cabinet",
     material: "Mahogany & Bronze",
     description: "Rich mahogany wood with bronze hardware and hand-carved details. Timeless sophistication.",
-    features: ["Hand-carved details", "Bronze hardware", "Multiple compartments"],
     image: tv4,
+    originalPrice: "42,000",
+    discountedPrice: "31,500",
+    stock: 4,
+    badge: "New Arrival",
   },
   {
     name: "The Executive Media Center",
+    slug: "the-executive-media-center",
     material: "Ebony & Chrome",
     description: "Sleek ebony finish with chrome accents and floating design. Perfect for contemporary interiors.",
-    features: ["Floating wall mount option", "Chrome accents", "Hidden cable channels"],
     image: tv5,
+    originalPrice: "48,000",
+    discountedPrice: "36,000",
+    stock: 2,
+    badge: "Hot Deal",
   },
   {
     name: "The Grand Entertainment Unit",
+    slug: "the-grand-entertainment-unit",
     material: "Teak & Gold Leaf",
     description: "Expansive teak wood unit with gold leaf detailing. Designed for large living spaces and home theaters.",
-    features: ["Extra-wide design", "Gold leaf accents", "Soundbar integration"],
     image: tv6,
+    originalPrice: "65,000",
+    discountedPrice: "48,750",
+    stock: 3,
+    badge: "Popular",
   },
+];
+
+const valueProps = [
+  { icon: Monitor, label: "Premium Materials", desc: "Solid wood and premium finishes" },
+  { icon: Zap, label: "Smart Cable Management", desc: "Integrated wire organization systems" },
+  { icon: Shield, label: "Built to Last", desc: "10-year structural warranty" },
+  { icon: Settings, label: "Custom Sizing", desc: "Tailored to your space requirements" },
 ];
 
 const LuxuryTVStands = () => {
@@ -199,8 +252,8 @@ const LuxuryTVStands = () => {
                       )}
                       {/* Only show Limited Offer badge if there's a discount */}
                       {product.discountPrice && product.originalPrice && (
-                        <div className="absolute top-4 left-4 bg-destructive text-destructive-foreground px-3 py-1.5 font-body font-bold text-sm tracking-wide">
-                          SALE
+                        <div className="absolute top-3 left-3 bg-red-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider flex items-center gap-1">
+                          <Flame className="w-3 h-3" /> Limited Offer
                         </div>
                       )}
                       <div className="absolute inset-0 border border-primary/10 pointer-events-none group-hover:border-primary/30 transition-colors duration-300" />
@@ -208,12 +261,12 @@ const LuxuryTVStands = () => {
                     <span className="font-accent text-xs tracking-[0.25em] uppercase text-primary block mb-1">
                       {product.material}
                     </span>
-                    <h3 className="font-display text-xl font-bold text-foreground mb-2">
+                    <h3 className="font-display text-xl font-bold text-foreground mb-1">
                       {product.name}
                     </h3>
                     {/* Show discount pricing if available, otherwise show regular price */}
                     {product.discountPrice && product.originalPrice ? (
-                      <div className="flex items-baseline gap-2 mb-4">
+                      <div className="flex items-baseline gap-2 mb-3">
                         <span className="font-display text-lg font-bold text-primary">
                           {product.discountPrice}
                         </span>
@@ -222,10 +275,10 @@ const LuxuryTVStands = () => {
                         </span>
                       </div>
                     ) : product.price ? (
-                      <p className="font-body text-sm text-muted-foreground mb-4">{product.price}</p>
+                      <p className="font-body text-sm text-muted-foreground mb-3">{product.price}</p>
                     ) : null}
                     <span className="inline-flex items-center gap-1.5 text-primary hover:text-gold-light transition-colors font-body text-sm font-semibold tracking-[0.1em] uppercase">
-                      <Phone className="w-3.5 h-3.5" />
+                      <ShoppingBag className="w-3.5 h-3.5" />
                       View Details →
                     </span>
                   </motion.div>
@@ -247,6 +300,14 @@ const LuxuryTVStands = () => {
                 </p>
               </div>
             )}
+            <div className="mb-10">
+              <h2 className="font-display text-2xl font-bold text-foreground mb-2">
+                Available TV Stands
+              </h2>
+              <p className="font-body text-sm text-muted-foreground max-w-xl">
+                Demo collection showcasing our premium TV stand range.
+              </p>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {tvStands.map((stand, index) => (
                 <motion.div
@@ -255,7 +316,8 @@ const LuxuryTVStands = () => {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
-                  className="group"
+                  className="group cursor-pointer"
+                  onClick={() => navigate(getProductDetailUrl(stand.name))}
                 >
                   <div className="relative overflow-hidden mb-5">
                     <img
@@ -266,38 +328,58 @@ const LuxuryTVStands = () => {
                       loading="lazy"
                       className="w-full aspect-square object-cover transition-transform duration-700 group-hover:scale-105"
                     />
+                    {/* Badge */}
+                    <div className="absolute top-3 left-3 bg-red-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider flex items-center gap-1">
+                      <Flame className="w-3 h-3" /> Limited Offer
+                    </div>
                     <div className="absolute inset-0 border border-primary/10 pointer-events-none group-hover:border-primary/30 transition-colors duration-300" />
                   </div>
+
                   <span className="font-accent text-xs tracking-[0.25em] uppercase text-primary block mb-1">
                     {stand.material}
                   </span>
-                  <h3 className="font-display text-xl font-bold text-foreground mb-2">
-                    {stand.name}
-                  </h3>
-                  <p className="font-body text-sm text-muted-foreground leading-relaxed mb-3">
-                    {stand.description}
-                  </p>
-                  <ul className="space-y-1 mb-4">
-                    {stand.features.map((feature) => (
-                      <li key={feature} className="font-body text-xs text-muted-foreground flex items-start gap-2">
-                        <span className="text-primary mt-1">•</span>
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <a
-                    href="tel:0911288820"
-                    className="inline-flex items-center gap-2 text-primary hover:text-gold-light transition-colors font-body text-sm font-semibold tracking-[0.1em] uppercase"
-                  >
-                    <Phone className="w-3.5 h-3.5" />
-                    Inquire
-                  </a>
+                  <h3 className="font-display text-xl font-bold text-foreground mb-1">{stand.name}</h3>
+                  
+                  {/* Pricing */}
+                  <div className="flex items-baseline gap-2 mb-3">
+                    <span className="font-display text-lg font-bold text-primary">
+                      {stand.discountedPrice} ETB
+                    </span>
+                    <span className="font-body text-sm text-muted-foreground line-through">
+                      {stand.originalPrice} ETB
+                    </span>
+                  </div>
+                  
+                  <span className="inline-flex items-center gap-1.5 text-primary hover:text-gold-light transition-colors font-body text-sm font-semibold tracking-[0.1em] uppercase">
+                    <ShoppingBag className="w-3.5 h-3.5" />
+                    View Details →
+                  </span>
                 </motion.div>
               ))}
             </div>
           </div>
         </section>
       )}
+
+      {/* Value Props Section */}
+      <section className="py-12 bg-charcoal-gradient border-t border-border/40">
+        <div className="container mx-auto px-6 lg:px-16">
+          <h2 className="font-display text-2xl font-bold text-foreground text-center mb-8">
+            Why Choose <span className="text-gold-gradient">Our TV Stands</span>
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {valueProps.map(({ icon: Icon, label, desc }) => (
+              <div key={label} className="text-center">
+                <div className="inline-flex p-3 rounded-xl bg-primary/10 border border-primary/20 mb-3">
+                  <Icon className="w-6 h-6 text-primary" />
+                </div>
+                <h3 className="font-body text-sm font-bold text-foreground mb-1">{label}</h3>
+                <p className="font-body text-xs text-muted-foreground">{desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* CTA */}
       <section className="py-16 bg-charcoal-gradient border-t border-border">
@@ -308,18 +390,29 @@ const LuxuryTVStands = () => {
             viewport={{ once: true }}
           >
             <h2 className="font-display text-3xl font-bold text-foreground mb-4">
-              Custom Designs Available
+              Need a Custom TV Stand?
             </h2>
             <p className="font-body text-muted-foreground mb-8 max-w-lg mx-auto">
-              Need a specific size or finish? We create bespoke TV stands tailored to your space and style preferences.
+              We create bespoke TV stands tailored to your exact specifications, room size, and style preferences.
             </p>
-            <a
-              href="tel:0911288820"
-              className="inline-flex items-center gap-3 px-10 py-5 bg-primary text-primary-foreground font-body font-bold text-sm tracking-[0.2em] uppercase transition-all duration-300 hover:bg-gold-light hover:shadow-gold"
-            >
-              <Phone className="w-4 h-4" />
-              Schedule Consultation
-            </a>
+            <div className="flex flex-wrap justify-center gap-3">
+              <a
+                href={`tel:${PHONE_NUMBER}`}
+                className="inline-flex items-center gap-3 px-10 py-5 bg-primary text-primary-foreground font-body font-bold text-sm tracking-[0.2em] uppercase transition-all duration-300 hover:bg-gold-light hover:shadow-gold"
+              >
+                <Phone className="w-4 h-4" />
+                Schedule Consultation
+              </a>
+              <a
+                href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent("Hello! I'd like to schedule a consultation for a custom TV stand.")}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-3 px-10 py-5 bg-green-600 text-white font-body font-bold text-sm tracking-[0.2em] uppercase transition-all duration-300 hover:bg-green-500"
+              >
+                <MessageCircle className="w-4 h-4" />
+                WhatsApp Us
+              </a>
+            </div>
           </motion.div>
         </div>
       </section>

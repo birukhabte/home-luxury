@@ -1,12 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { motion } from "framer-motion";
 import heroImage from "@/assets/hero-living-room.jpg";
 import { apiGet } from "@/lib/api";
 import { useNavigate } from "react-router-dom";
-import { X } from "lucide-react";
+import { X, ChevronLeft, ChevronRight } from "lucide-react";
 
 const HeroSection = () => {
   const navigate = useNavigate();
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
   const [heroPromos, setHeroPromos] = useState<
     {
       id: string;
@@ -20,6 +23,7 @@ const HeroSection = () => {
       originalPrice?: string;
       salePrice?: string;
       endAt?: string;
+      isProduct?: boolean;
     }[]
   >([]);
   const [selectedPromo, setSelectedPromo] = useState<
@@ -35,14 +39,36 @@ const HeroSection = () => {
       originalPrice?: string;
       salePrice?: string;
       endAt?: string;
+      isProduct?: boolean;
     } | null
   >(null);
+
+  const checkScrollButtons = () => {
+    if (scrollContainerRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
+      setCanScrollLeft(scrollLeft > 0);
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1);
+    }
+  };
+
+  const scrollLeft = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({ left: -280, behavior: 'smooth' });
+    }
+  };
+
+  const scrollRight = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({ left: 280, behavior: 'smooth' });
+    }
+  };
 
   useEffect(() => {
     (async () => {
       try {
-        const data = await apiGet<any[]>("/promotions");
-        const active = (data || [])
+        // Fetch regular promotions
+        const promoData = await apiGet<any[]>("/promotions");
+        const activePromos = (promoData || [])
           .map((p) => {
             const status = p.status || (p.isActive ? "Active" : "Draft");
             if (status !== "Active") return null;
@@ -53,7 +79,6 @@ const HeroSection = () => {
                 ? `${p.discountPercentage}%`
                 : "";
 
-            // Only show discount if there's a meaningful discount value
             const discount: string = p.discount && p.discount.trim() !== "" 
               ? p.discount 
               : discountFromNumber;
@@ -100,6 +125,7 @@ const HeroSection = () => {
               originalPrice: p.originalPrice || "",
               salePrice: p.salePrice || "",
               endAt: rawEndDate,
+              isProduct: false,
             };
           })
           .filter(
@@ -115,17 +141,68 @@ const HeroSection = () => {
               originalPrice?: string;
               salePrice?: string;
               endAt?: string;
+              isProduct?: boolean;
             } => !!p && !!p.name && (p.discount !== "" || (p.salePrice && p.originalPrice)),
           );
 
-        if (active.length > 0) {
-          setHeroPromos(active.slice(0, 3));
+        // Fetch discounted products
+        const discountedProducts = await apiGet<any[]>("/products/discounted");
+        const productPromos = (discountedProducts || [])
+          .map((product) => {
+            if (!product.originalPrice || !product.discountPrice) return null;
+
+            const originalNum = parseFloat(product.originalPrice.replace(/[^\d.]/g, ''));
+            const discountedNum = parseFloat(product.discountPrice.replace(/[^\d.]/g, ''));
+            
+            let discountPercent = 0;
+            if (originalNum && discountedNum && originalNum > discountedNum) {
+              discountPercent = Math.round(((originalNum - discountedNum) / originalNum) * 100);
+            }
+
+            if (discountPercent === 0) return null;
+
+            // Generate product link
+            const slug = product.name.toLowerCase()
+              .replace(/[^a-z0-9\s-]/g, '')
+              .replace(/\s+/g, '-')
+              .replace(/-+/g, '-')
+              .trim();
+
+            return {
+              id: product.id || product._id || "",
+              name: product.name,
+              discount: `${discountPercent}%`,
+              link: `/${slug}/sofa-detail`,
+              imageUrl: product.imageUrl || product.imageUrls?.[0],
+              expiryDate: "Limited Time",
+              description: `${product.material} - Special discount on this premium ${product.category.toLowerCase()}`,
+              category: product.category,
+              originalPrice: product.originalPrice,
+              salePrice: product.discountPrice,
+              endAt: "",
+              isProduct: true,
+            };
+          })
+          .filter(Boolean);
+
+        // Combine promotions and discounted products, prioritize products
+        const allPromos = [...(productPromos as any[]), ...activePromos];
+        
+        if (allPromos.length > 0) {
+          setHeroPromos(allPromos.slice(0, 6)); // Allow up to 6 items for scrolling
         }
       } catch {
-        // fail silently in hero if promos API is down
+        // fail silently in hero if APIs are down
       }
     })();
   }, []);
+
+  // Check scroll buttons when promotions load
+  useEffect(() => {
+    if (heroPromos.length > 0) {
+      setTimeout(checkScrollButtons, 100);
+    }
+  }, [heroPromos]);
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
@@ -185,13 +262,13 @@ const HeroSection = () => {
             className="flex flex-col sm:flex-row gap-4"
           >
             <a
-              href="tel:0911288820"
+              href="tel:0995871152"
               className="inline-flex items-center justify-center px-8 py-4 bg-primary text-primary-foreground font-body font-semibold text-sm tracking-[0.15em] uppercase transition-all duration-300 hover:bg-gold-light hover:shadow-gold"
             >
               Book a Private Viewing
             </a>
             <a
-              href="#collections"
+              href="/products"
               className="inline-flex items-center justify-center px-8 py-4 border border-gold-dark text-foreground font-body font-medium text-sm tracking-[0.15em] uppercase transition-all duration-300 hover:bg-primary/10"
             >
               Explore Collections
@@ -209,7 +286,7 @@ const HeroSection = () => {
               { label: "Sofas", href: "/luxury-sofas" },
               { label: "Majlis", href: "/arabian-majlis" },
               { label: "TV Stand", href: "/luxury-tv-stands" },
-              { label: "More", href: "#collections" },
+              { label: "More", href: "/products" },
             ].map((item, i) => (
               <motion.a
                 key={item.label}
@@ -225,77 +302,135 @@ const HeroSection = () => {
           </motion.div>
           </div>
 
-          {/* Right: Highlighted Promotions (up to 3 slots) */}
-          <motion.div
-            initial={{ opacity: 0, x: 40 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, delay: 0.7 }}
-            className="w-full max-w-2xl lg:self-center mt-8 lg:mt-0 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
-          >
-            {Array.from({ length: 3 }).map((_, index) => {
-              const promo = heroPromos[index];
-              if (promo) {
-                return (
-                  <div
-                    key={promo.name + index}
-                    className="bg-background/90 border border-gold-dark/60 rounded-2xl shadow-xl backdrop-blur-md p-5 flex flex-col justify-between gap-3 aspect-square"
-                  >
-                    {promo.imageUrl && (
-                      <div className="w-full h-28 rounded-xl overflow-hidden border border-border/60">
-                        <img
-                          src={promo.imageUrl}
-                          alt={promo.name}
-                          className="w-full h-full object-cover"
-                          loading="lazy"
-                        />
-                      </div>
-                    )}
+          {/* Right: Highlighted Promotions - Single Card with Side-by-Side Layout */}
+          {heroPromos.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, x: 40 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, delay: 0.7 }}
+              className="w-full max-w-2xl lg:self-center mt-8 lg:mt-0"
+            >
+              <div className="bg-background/90 border border-gold-dark/60 rounded-2xl shadow-xl backdrop-blur-md p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
                     <p className="text-[11px] font-body tracking-[0.25em] uppercase text-gold-light mb-2">
-                      Limited Time Promotion
+                      Limited Time Promotions
                     </p>
-                    <h3 className="font-display text-lg font-semibold text-foreground mb-1">
-                      {promo.name}
+                    <h3 className="font-display text-xl font-semibold text-foreground">
+                      Exclusive Offers
                     </h3>
-                    {promo.discount && (
-                      <p className="font-body text-sm text-destructive font-semibold mb-3">
-                        {promo.discount} OFF
-                      </p>
-                    )}
-                    {promo.expiryDate && (
-                      <p className="font-body text-[11px] text-muted-foreground mb-2">
-                        Valid until {promo.expiryDate}
-                      </p>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => setSelectedPromo(promo)}
-                      className="inline-flex items-center justify-center w-full px-4 py-2 rounded-md bg-primary text-primary-foreground font-body text-[11px] font-semibold tracking-[0.18em] uppercase hover:bg-gold-light transition-colors duration-300"
-                    >
-                      View Discount
-                    </button>
                   </div>
-                );
-              }
-
-              // Placeholder card when no promotion for this slot
-              return (
-                <div
-                  key={`placeholder-${index}`}
-                  className="border border-dashed border-gold-dark/50 rounded-2xl bg-background/60 backdrop-blur-md p-5 flex flex-col items-center justify-center text-center gap-2 text-muted-foreground aspect-square"
-                >
-                  <p className="text-[11px] font-body tracking-[0.25em] uppercase mb-1">
-                    Promotion Slot
-                  </p>
-                  <h3 className="font-display text-base font-semibold">
-                    Offer coming soon
-                  </h3>
-                  <p className="font-body text-xs max-w-[12rem]">
-                    New limited-time deals will appear here.
-                  </p>
+                  
+                  {/* Navigation Arrows */}
+                  {heroPromos.length > 2 && (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={scrollLeft}
+                        disabled={!canScrollLeft}
+                        className={`p-2 rounded-full border transition-all duration-300 ${
+                          canScrollLeft
+                            ? 'border-primary text-primary hover:bg-primary/10'
+                            : 'border-border/40 text-muted-foreground/40 cursor-not-allowed'
+                        }`}
+                        aria-label="Scroll left"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={scrollRight}
+                        disabled={!canScrollRight}
+                        className={`p-2 rounded-full border transition-all duration-300 ${
+                          canScrollRight
+                            ? 'border-primary text-primary hover:bg-primary/10'
+                            : 'border-border/40 text-muted-foreground/40 cursor-not-allowed'
+                        }`}
+                        aria-label="Scroll right"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
                 </div>
-              );
-            })}
-          </motion.div>
+                
+                <div 
+                  ref={scrollContainerRef}
+                  className="flex gap-4 overflow-x-auto pb-2"
+                  onScroll={checkScrollButtons}
+                  style={{ 
+                    scrollbarWidth: 'none', 
+                    msOverflowStyle: 'none',
+                    WebkitScrollbar: { display: 'none' }
+                  }}
+                >
+                  {heroPromos.map((promo, index) => (
+                    <div
+                      key={promo.name + index}
+                      className="flex-shrink-0 w-64 border border-border/40 rounded-xl p-4 bg-background/50 backdrop-blur-sm"
+                    >
+                      {promo.imageUrl && (
+                        <div className="w-full h-24 rounded-lg overflow-hidden border border-border/60 mb-3">
+                          <img
+                            src={promo.imageUrl}
+                            alt={promo.name}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                          />
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="font-display text-base font-semibold text-foreground line-clamp-2">
+                          {promo.name}
+                        </h4>
+                        {promo.isProduct && (
+                          <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full border border-blue-500/30">
+                            Product
+                          </span>
+                        )}
+                      </div>
+                      
+                      {promo.discount && (
+                        <p className="font-body text-sm text-destructive font-semibold mb-2">
+                          {promo.discount} OFF
+                        </p>
+                      )}
+                      
+                      {promo.description && (
+                        <p className="font-body text-xs text-muted-foreground mb-3 line-clamp-2">
+                          {promo.description}
+                        </p>
+                      )}
+                      
+                      {promo.expiryDate && (
+                        <p className="font-body text-[10px] text-muted-foreground mb-3">
+                          Valid until {promo.expiryDate}
+                        </p>
+                      )}
+                      
+                      <button
+                        type="button"
+                        onClick={() => setSelectedPromo(promo)}
+                        className="inline-flex items-center justify-center w-full px-3 py-2 rounded-md bg-primary text-primary-foreground font-body text-[10px] font-semibold tracking-[0.18em] uppercase hover:bg-gold-light transition-colors duration-300"
+                      >
+                        View Details
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                
+                {heroPromos.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <p className="font-body text-sm">
+                      No active promotions at the moment
+                    </p>
+                    <p className="font-body text-xs mt-1">
+                      Check back soon for exclusive offers
+                    </p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
         </div>
       </div>
 
@@ -400,7 +535,7 @@ const HeroSection = () => {
                   Close
                 </button>
                 <a
-                  href="tel:0911288820"
+                  href="tel:0995871152"
                   className="px-4 py-2 rounded-md border border-gold-dark text-xs font-body tracking-[0.16em] uppercase text-foreground hover:bg-primary/10"
                 >
                   Call to Reserve
@@ -419,11 +554,15 @@ const HeroSection = () => {
                   type="button"
                   onClick={() => {
                     setSelectedPromo(null);
-                    navigate(selectedPromo.link);
+                    if (selectedPromo.isProduct) {
+                      navigate(selectedPromo.link);
+                    } else {
+                      navigate(selectedPromo.link);
+                    }
                   }}
                   className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-xs font-body tracking-[0.16em] uppercase hover:bg-gold-light"
                 >
-                  Order Now
+                  {selectedPromo.isProduct ? 'View Product' : 'Order Now'}
                 </button>
               </div>
             </div>

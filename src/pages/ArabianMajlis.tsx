@@ -24,7 +24,7 @@ interface Product {
 }
 
 const WA = "251911288820";
-const TEL = "0911288820";
+const TEL = "0995871152";
 
 const majlisCollection = [
   { name: "The Grand Heritage", slug: "grand-heritage", style: "Burgundy & Gold Brocade", description: "A regal masterpiece in rich burgundy and gold — hand-woven brocade fabric with ornate bolster cushions, perfect for grand cultural gatherings.", image: arabianMajlis, originalPrice: "120,000", discountedPrice: "88,000", stock: 2, badge: "Flagship" },
@@ -220,7 +220,8 @@ const ArabianMajlis = () => {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
-                  className="group"
+                  className="group cursor-pointer"
+                  onClick={() => navigate(getProductDetailUrl(item.name))}
                 >
                   <div className="relative overflow-hidden mb-5">
                     <img
@@ -231,71 +232,30 @@ const ArabianMajlis = () => {
                       loading="lazy"
                       className="w-full aspect-square object-cover transition-transform duration-700 group-hover:scale-105"
                     />
-                    <div className="absolute top-3 left-3 bg-primary text-primary-foreground text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">
-                      {item.badge}
+                    <div className="absolute top-3 left-3 bg-red-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider flex items-center gap-1">
+                      <Flame className="w-3 h-3" /> Limited Offer
                     </div>
-                    {item.stock <= 2 && (
-                      <div className="absolute top-3 right-3 bg-red-500/90 text-white text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider">
-                        Only {item.stock} left
-                      </div>
-                    )}
                     <div className="absolute inset-0 border border-primary/10 pointer-events-none group-hover:border-primary/30 transition-colors duration-300" />
                   </div>
+
                   <span className="font-accent text-xs tracking-[0.25em] uppercase text-primary block mb-1">
                     {item.style}
                   </span>
-                  <h3 className="font-display text-xl font-bold text-foreground mb-2">{item.name}</h3>
-                  <p className="font-body text-sm text-muted-foreground leading-relaxed mb-3">
-                    {item.description}
-                  </p>
-                  <div className="flex items-baseline gap-3 mb-4">
-                    <span className="font-body text-sm text-muted-foreground line-through">
-                      Was: {item.originalPrice} ETB
-                    </span>
-                    <span className="font-display text-lg font-bold text-primary flex items-center gap-1">
-                      <Flame className="w-4 h-4" />
+                  <h3 className="font-display text-xl font-bold text-foreground mb-1">{item.name}</h3>
+                  
+                  <div className="flex items-baseline gap-2 mb-3">
+                    <span className="font-display text-lg font-bold text-primary">
                       {item.discountedPrice} ETB
                     </span>
+                    <span className="font-body text-sm text-muted-foreground line-through">
+                      {item.originalPrice} ETB
+                    </span>
                   </div>
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    <a
-                      href={`https://wa.me/${WA}?text=${encodeURIComponent(`Hi! I'd like to order the ${item.name} (${item.style}) Majlis set. Please confirm availability.`)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground font-body font-bold text-xs tracking-[0.1em] uppercase rounded-lg hover:bg-gold-light transition-all"
-                    >
-                      <ShoppingBag className="w-3.5 h-3.5" />
-                      Order Now
-                    </a>
-                    <a
-                      href={`https://wa.me/${WA}?text=${encodeURIComponent(`Hi! I'd like to customize the ${item.name} Majlis. Can we discuss colors and fabric options?`)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-4 py-2 border border-primary text-primary font-body font-semibold text-xs tracking-[0.1em] uppercase rounded-lg hover:bg-primary/10 transition-all"
-                    >
-                      <Palette className="w-3.5 h-3.5" />
-                      Customize & Order
-                    </a>
-                  </div>
-                  <div className="flex gap-2">
-                    <a
-                      href={`tel:${TEL}`}
-                      className="inline-flex items-center gap-1.5 text-blue-400 hover:text-blue-300 font-body text-xs font-semibold transition-colors"
-                    >
-                      <Phone className="w-3.5 h-3.5" />
-                      Call
-                    </a>
-                    <span className="text-border">|</span>
-                    <a
-                      href={`https://wa.me/${WA}?text=${encodeURIComponent(`Hi! I'm interested in the ${item.name} Majlis. Can you tell me more?`)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 text-green-400 hover:text-green-300 font-body text-xs font-semibold transition-colors"
-                    >
-                      <MessageCircle className="w-3.5 h-3.5" />
-                      WhatsApp
-                    </a>
-                  </div>
+                  
+                  <span className="inline-flex items-center gap-1.5 text-primary hover:text-gold-light transition-colors font-body text-sm font-semibold tracking-[0.1em] uppercase">
+                    <ShoppingBag className="w-3.5 h-3.5" />
+                    View Details →
+                  </span>
                 </motion.div>
               ))}
             </div>

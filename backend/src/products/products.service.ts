@@ -13,6 +13,29 @@ export class ProductsService {
   async findAll() {
     return this.productModel.find().sort({ createdAt: -1 }).lean().exec();
   }
+  async findDiscounted() {
+    return this.productModel
+      .find({
+        status: 'Active',
+        $and: [
+          {
+            $or: [
+              { discountPrice: { $exists: true, $ne: null } },
+              { originalPrice: { $exists: true, $ne: null } }
+            ]
+          },
+          {
+            $or: [
+              { discountPrice: { $ne: '' } },
+              { originalPrice: { $ne: '' } }
+            ]
+          }
+        ]
+      })
+      .sort({ createdAt: -1 })
+      .lean()
+      .exec();
+  }
 
   async create(payload: Omit<Product, 'id'>) {
     const created = new this.productModel(payload);

@@ -59,7 +59,7 @@ const OrderSuccess = () => {
                 </p>
                 <div className="flex justify-center">
                   <a
-                    href="tel:0911288820"
+                    href="tel:0995871152"
                     className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 border border-blue-500/30 text-blue-400 rounded-lg hover:bg-blue-500/20 transition-colors font-body text-sm font-semibold"
                   >
                     <Phone className="w-4 h-4" />

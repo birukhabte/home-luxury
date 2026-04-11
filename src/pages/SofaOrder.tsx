@@ -527,7 +527,7 @@ const SofaOrder = () => {
                                             <Phone className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
                                             <p className="font-body text-xs text-muted-foreground">
                                                 Prefer to order by phone?{" "}
-                                                <a href="tel:0911288820" className="text-primary underline">Call 0911 288 820</a>
+                                                <a href="tel:0995871152" className="text-primary underline">Call 0995 871 152</a>
                                                 {" "}and our team will assist you.
                                             </p>
                                         </div>

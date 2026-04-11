@@ -71,26 +71,26 @@ const ProductShowcase = () => {
                 } gap-12 lg:gap-20 items-center`}
             >
               {/* Image */}
-              <div className="w-full lg:w-1/2 relative group">
+              <div className="w-full lg:w-2/5 relative group">
                 <div className="overflow-hidden">
                   <img
                     src={product.image}
                     alt={product.alt}
-                    width={1024}
-                    height={1024}
+                    width={768}
+                    height={512}
                     loading="lazy"
-                    className="w-full aspect-square object-cover transition-transform duration-700 group-hover:scale-105"
+                    className="w-full aspect-[4/3] object-cover transition-transform duration-700 group-hover:scale-105"
                   />
                 </div>
                 <div className="absolute inset-0 border border-primary/20 pointer-events-none" />
                 <div
                   className={`absolute -bottom-4 ${index % 2 === 0 ? "-right-4" : "-left-4"
-                    } w-24 h-24 border border-primary/30 -z-10`}
+                    } w-16 h-16 border border-primary/30 -z-10`}
                 />
               </div>
 
               {/* Content */}
-              <div className="w-full lg:w-1/2">
+              <div className="w-full lg:w-3/5">
                 <span className="font-accent text-sm tracking-[0.25em] uppercase text-primary mb-3 block">
                   {product.subtitle}
                 </span>
@@ -113,14 +113,14 @@ const ProductShowcase = () => {
                 </ul>
                 {product.link ? (
                   <Link
-                    to="/products"
+                    to={product.link}
                     className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground font-body font-semibold text-sm tracking-[0.1em] uppercase transition-all duration-300 hover:bg-gold-light hover:shadow-gold"
                   >
                     Explore More
                   </Link>
                 ) : (
                   <a
-                    href="tel:0911288820"
+                    href="tel:0995871152"
                     className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground font-body font-semibold text-sm tracking-[0.1em] uppercase transition-all duration-300 hover:bg-gold-light hover:shadow-gold"
                   >
                     Explore More

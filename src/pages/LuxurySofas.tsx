@@ -36,6 +36,7 @@ interface Product {
   name: string;
   category: Category;
   material: string;
+  description?: string;
   price: string;
   originalPrice?: string;
   discountPrice?: string;
@@ -45,7 +46,7 @@ interface Product {
 }
 
 const WHATSAPP_NUMBER = "251911288820";
-const PHONE_NUMBER = "0911288820";
+const PHONE_NUMBER = "0995871152";
 
 const sofas = [
   {
@@ -183,6 +184,7 @@ const LuxurySofas = () => {
             name: p.name,
             category: p.category,
             material: p.material,
+            description: p.description,
             price: p.price,
             originalPrice: p.originalPrice,
             discountPrice: p.discountPrice,
@@ -406,7 +408,7 @@ const LuxurySofas = () => {
                       className="inline-flex items-center gap-2 px-4 py-2 border border-primary text-primary font-body font-semibold text-xs tracking-[0.1em] uppercase rounded-lg hover:bg-primary/10 transition-all duration-300"
                     >
                       <Palette className="w-3.5 h-3.5" />
-                      Customize
+                      Customize and Order Call 0995871152
                     </Link>
                   </div>
 
