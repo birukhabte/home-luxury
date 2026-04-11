@@ -27,10 +27,19 @@ export class Product {
   material!: string;
 
   @Prop()
+  description?: string;
+
+  @Prop()
   imageUrl?: string;
+
+  @Prop()
+  imageColor?: string;
 
   @Prop({ type: [String], default: [] })
   imageUrls!: string[];
+
+  @Prop({ type: [String], default: [] })
+  imageColors!: string[];
 
   @Prop({ required: true, enum: ['Active', 'Draft', 'Out of Stock'] })
   status!: ProductStatus;

@@ -19,7 +19,7 @@ import { getProductDetailUrl } from "@/lib/slugs";
 
 type Category = "Luxury Sofas" | "Arabian Majlis" | "Luxury TV Stands";
 interface Product {
-  id: string; name: string; category: Category; material: string;
+  id: string; name: string; category: Category; material: string; description?: string;
   price: string; originalPrice?: string; discountPrice?: string; status: string; imageUrl?: string; imageUrls?: string[];
 }
 
@@ -77,6 +77,7 @@ const ArabianMajlis = () => {
             name: p.name,
             category: p.category,
             material: p.material,
+            description: p.description,
             price: p.price,
             originalPrice: p.originalPrice,
             discountPrice: p.discountPrice,

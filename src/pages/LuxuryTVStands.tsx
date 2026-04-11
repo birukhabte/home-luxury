@@ -20,6 +20,7 @@ interface Product {
   name: string;
   category: Category;
   material: string;
+  description?: string;
   price: string;
   originalPrice?: string;
   discountPrice?: string;
@@ -89,6 +90,7 @@ const LuxuryTVStands = () => {
             name: p.name,
             category: p.category,
             material: p.material,
+            description: p.description,
             price: p.price,
             originalPrice: p.originalPrice,
             discountPrice: p.discountPrice,

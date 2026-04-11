@@ -113,7 +113,7 @@ const ProductShowcase = () => {
                 </ul>
                 {product.link ? (
                   <Link
-                    to={product.link}
+                    to="/products"
                     className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground font-body font-semibold text-sm tracking-[0.1em] uppercase transition-all duration-300 hover:bg-gold-light hover:shadow-gold"
                   >
                     Explore More
