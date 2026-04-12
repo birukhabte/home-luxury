@@ -1,11 +1,15 @@
 import { useState, useEffect } from "react";
-import { Phone, Search, User, X, Filter, ChevronDown, Flame, Star, Sparkles } from "lucide-react";
+import { Phone, Search, User, X, Filter, ChevronDown, Flame, Star, Sparkles, ShoppingCart, LogOut } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { apiGet, apiPost } from "@/lib/api";
+import { useCart } from "@/contexts/CartContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const navigate = useNavigate();
+  const { getTotalItems } = useCart();
+  const { isAuthenticated, user, logout } = useAuth();
   
   // Search state
   const [searchQuery, setSearchQuery] = useState("");
@@ -339,19 +343,51 @@ const Navbar = () => {
 
           {/* Auth Buttons */}
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setActiveAuthForm("login")}
-              className="inline-flex items-center gap-1 px-3 py-1.5 border border-primary/60 text-primary bg-primary/10 font-body font-semibold text-xs tracking-[0.1em] uppercase rounded hover:bg-primary/20 transition-colors"
+            {/* Cart Icon */}
+            <Link
+              to="/cart"
+              className="relative inline-flex items-center gap-1 px-3 py-1.5 border border-primary/60 text-primary bg-primary/10 font-body font-semibold text-xs tracking-[0.1em] uppercase rounded hover:bg-primary/20 transition-colors"
             >
-              <User className="w-3 h-3" />
-              Login
-            </button>
-            <button
-              onClick={() => setActiveAuthForm("register")}
-              className="inline-flex items-center gap-1 px-3 py-1.5 border border-border text-muted-foreground font-body font-semibold text-xs tracking-[0.1em] uppercase rounded hover:bg-primary/10 hover:text-foreground transition-colors"
-            >
-              Register
-            </button>
+              <ShoppingCart className="w-3 h-3" />
+              Cart
+              {getTotalItems() > 0 && (
+                <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                  {getTotalItems()}
+                </span>
+              )}
+            </Link>
+            
+            {isAuthenticated ? (
+              <>
+                <div className="inline-flex items-center gap-1 px-3 py-1.5 border border-primary/60 text-primary bg-primary/10 font-body font-semibold text-xs tracking-[0.1em] uppercase rounded">
+                  <User className="w-3 h-3" />
+                  {user?.name}
+                </div>
+                <button
+                  onClick={logout}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 border border-border text-muted-foreground font-body font-semibold text-xs tracking-[0.1em] uppercase rounded hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-colors"
+                >
+                  <LogOut className="w-3 h-3" />
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  className="inline-flex items-center gap-1 px-3 py-1.5 border border-primary/60 text-primary bg-primary/10 font-body font-semibold text-xs tracking-[0.1em] uppercase rounded hover:bg-primary/20 transition-colors"
+                >
+                  <User className="w-3 h-3" />
+                  Login
+                </Link>
+                <Link
+                  to="/login"
+                  className="inline-flex items-center gap-1 px-3 py-1.5 border border-border text-muted-foreground font-body font-semibold text-xs tracking-[0.1em] uppercase rounded hover:bg-primary/10 hover:text-foreground transition-colors"
+                >
+                  Register
+                </Link>
+              </>
+            )}
           </div>
           
           {/* Social Media Links */}

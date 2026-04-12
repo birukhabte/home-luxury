@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useCart } from "@/contexts/CartContext";
 
 interface OrderSummary {
   productName: string;
@@ -27,49 +28,82 @@ interface OrderSummary {
   customerAddress: string;
   quantity: number;
   totalAmount: string;
+  fromCart?: boolean;
 }
 
 const Payment = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { items: cartItems, clearCart } = useCart();
   const [orderSummary, setOrderSummary] = useState<OrderSummary | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<"bank" | "cash" | null>(null);
   const [selectedBank, setSelectedBank] = useState<"cbe" | null>(null);
   const [cbeAccountNumber, setCbeAccountNumber] = useState("");
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [customerDetails, setCustomerDetails] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+  });
+
+  const fromCart = searchParams.get("fromCart") === "true";
 
   useEffect(() => {
-    // Get order details from URL parameters
-    const productName = searchParams.get("productName");
-    const productPrice = searchParams.get("productPrice");
-    const customerName = searchParams.get("customerName");
-    const customerEmail = searchParams.get("customerEmail");
-    const customerPhone = searchParams.get("customerPhone");
-    const customerAddress = searchParams.get("customerAddress");
-    const quantity = parseInt(searchParams.get("quantity") || "1");
-    const totalAmount = searchParams.get("totalAmount");
-
-    if (productName && customerName && customerPhone) {
+    if (fromCart && cartItems.length > 0) {
+      // Handle cart checkout - show form to collect customer details
+      const totalAmount = searchParams.get("totalAmount") || "";
       setOrderSummary({
-        productName,
-        productPrice: productPrice || "",
-        customerName,
-        customerEmail: customerEmail || "",
-        customerPhone,
-        customerAddress: customerAddress || "",
-        quantity,
-        totalAmount: totalAmount || productPrice || "",
+        productName: `${cartItems.length} item(s)`,
+        productPrice: totalAmount,
+        customerName: "",
+        customerEmail: "",
+        customerPhone: "",
+        customerAddress: "",
+        quantity: cartItems.reduce((sum, item) => sum + item.quantity, 0),
+        totalAmount,
+        fromCart: true,
       });
     } else {
-      // Redirect back if missing required data
-      navigate("/");
+      // Handle single product checkout
+      const productName = searchParams.get("productName");
+      const productPrice = searchParams.get("productPrice");
+      const customerName = searchParams.get("customerName");
+      const customerEmail = searchParams.get("customerEmail");
+      const customerPhone = searchParams.get("customerPhone");
+      const customerAddress = searchParams.get("customerAddress");
+      const quantity = parseInt(searchParams.get("quantity") || "1");
+      const totalAmount = searchParams.get("totalAmount");
+
+      if (productName && customerName && customerPhone) {
+        setOrderSummary({
+          productName,
+          productPrice: productPrice || "",
+          customerName,
+          customerEmail: customerEmail || "",
+          customerPhone,
+          customerAddress: customerAddress || "",
+          quantity,
+          totalAmount: totalAmount || productPrice || "",
+          fromCart: false,
+        });
+      } else if (!fromCart) {
+        // Redirect back if missing required data
+        navigate("/");
+      }
     }
-  }, [searchParams, navigate]);
+  }, [searchParams, navigate, fromCart, cartItems]);
 
   const handlePayment = async () => {
     if (!orderSummary || !paymentMethod) return;
     if (paymentMethod === "bank" && (!selectedBank || !cbeAccountNumber || !receiptFile)) return;
+    
+    // For cart checkout, validate customer details
+    if (fromCart && (!customerDetails.name || !customerDetails.phone)) {
+      alert("Please fill in your name and phone number");
+      return;
+    }
 
     setIsProcessing(true);
 
@@ -78,12 +112,24 @@ const Payment = () => {
       // For now, just redirect to success page
       // In a real implementation, you would submit the order data to your backend
       console.log("Order submitted:", {
-        orderSummary,
+        orderSummary: fromCart ? {
+          ...orderSummary,
+          customerName: customerDetails.name,
+          customerEmail: customerDetails.email,
+          customerPhone: customerDetails.phone,
+          customerAddress: customerDetails.address,
+        } : orderSummary,
+        cartItems: fromCart ? cartItems : null,
         paymentMethod,
         selectedBank,
         cbeAccountNumber: paymentMethod === "bank" ? cbeAccountNumber : null,
         receiptFile: paymentMethod === "bank" ? receiptFile : null,
       });
+
+      // Clear cart if checkout from cart
+      if (fromCart) {
+        clearCart();
+      }
 
       navigate("/order-success");
     }, 2000);
@@ -141,43 +187,124 @@ const Payment = () => {
                 <CardTitle className="font-display text-xl">Order Summary</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="border-b border-border pb-4">
-                  <h3 className="font-semibold text-foreground mb-2">{orderSummary.productName}</h3>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Price:</span>
-                    <span className="text-foreground">{orderSummary.productPrice}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Quantity:</span>
-                    <span className="text-foreground">{orderSummary.quantity}</span>
-                  </div>
-                </div>
+                {fromCart && cartItems.length > 0 ? (
+                  <>
+                    {/* Cart Items */}
+                    <div className="space-y-3 border-b border-border pb-4">
+                      {cartItems.map((item) => {
+                        const price = item.discountPrice || item.price;
+                        const numPrice = parseFloat(price.replace(/[^\d.]/g, ''));
+                        const itemTotal = numPrice * item.quantity;
+                        
+                        return (
+                          <div key={`${item.id}-${item.selectedColor || 'default'}`} className="flex gap-3">
+                            {item.imageUrl && (
+                              <img
+                                src={item.imageUrl}
+                                alt={item.name}
+                                className="w-16 h-16 object-cover rounded border border-border"
+                              />
+                            )}
+                            <div className="flex-1">
+                              <h4 className="font-semibold text-foreground text-sm">{item.name}</h4>
+                              <p className="text-xs text-muted-foreground">{item.material}</p>
+                              {item.selectedColor && (
+                                <p className="text-xs text-muted-foreground">Color: {item.selectedColor}</p>
+                              )}
+                              <div className="flex justify-between items-center mt-1">
+                                <span className="text-xs text-muted-foreground">Qty: {item.quantity}</span>
+                                <span className="text-sm font-semibold text-foreground">{itemTotal.toFixed(2)} Birr</span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
 
-                <div className="border-b border-border pb-4">
-                  <h4 className="font-semibold text-foreground mb-2">Customer Details</h4>
-                  <div className="space-y-1 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Name:</span>
-                      <span className="text-foreground">{orderSummary.customerName}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Phone:</span>
-                      <span className="text-foreground">{orderSummary.customerPhone}</span>
-                    </div>
-                    {orderSummary.customerEmail && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Email:</span>
-                        <span className="text-foreground">{orderSummary.customerEmail}</span>
+                    {/* Customer Details Form for Cart Checkout */}
+                    <div className="border-b border-border pb-4">
+                      <h4 className="font-semibold text-foreground mb-3">Customer Details</h4>
+                      <div className="space-y-3">
+                        <div>
+                          <Label htmlFor="customer-name" className="text-xs">Full Name *</Label>
+                          <Input
+                            id="customer-name"
+                            type="text"
+                            value={customerDetails.name}
+                            onChange={(e) => setCustomerDetails(prev => ({ ...prev, name: e.target.value }))}
+                            placeholder="Enter your name"
+                            required
+                            className="h-9 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="customer-phone" className="text-xs">Phone Number *</Label>
+                          <Input
+                            id="customer-phone"
+                            type="tel"
+                            value={customerDetails.phone}
+                            onChange={(e) => setCustomerDetails(prev => ({ ...prev, phone: e.target.value }))}
+                            placeholder="Enter your phone"
+                            required
+                            className="h-9 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="customer-address" className="text-xs">Delivery Address</Label>
+                          <Input
+                            id="customer-address"
+                            type="text"
+                            value={customerDetails.address}
+                            onChange={(e) => setCustomerDetails(prev => ({ ...prev, address: e.target.value }))}
+                            placeholder="Enter delivery address"
+                            className="h-9 text-sm"
+                          />
+                        </div>
                       </div>
-                    )}
-                    {orderSummary.customerAddress && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Address:</span>
-                        <span className="text-foreground text-right max-w-[200px]">{orderSummary.customerAddress}</span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* Single Product */}
+                    <div className="border-b border-border pb-4">
+                      <h3 className="font-semibold text-foreground mb-2">{orderSummary.productName}</h3>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Price:</span>
+                        <span className="text-foreground">{orderSummary.productPrice}</span>
                       </div>
-                    )}
-                  </div>
-                </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Quantity:</span>
+                        <span className="text-foreground">{orderSummary.quantity}</span>
+                      </div>
+                    </div>
+
+                    <div className="border-b border-border pb-4">
+                      <h4 className="font-semibold text-foreground mb-2">Customer Details</h4>
+                      <div className="space-y-1 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Name:</span>
+                          <span className="text-foreground">{orderSummary.customerName}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Phone:</span>
+                          <span className="text-foreground">{orderSummary.customerPhone}</span>
+                        </div>
+                        {orderSummary.customerEmail && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Email:</span>
+                            <span className="text-foreground">{orderSummary.customerEmail}</span>
+                          </div>
+                        )}
+                        {orderSummary.customerAddress && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Address:</span>
+                            <span className="text-foreground text-right max-w-[200px]">{orderSummary.customerAddress}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
 
                 <div className="flex justify-between items-center text-lg font-semibold">
                   <span className="text-foreground">Total Amount:</span>
@@ -334,7 +461,12 @@ const Payment = () => {
                 {/* Complete Order Button */}
                 <Button
                   onClick={handlePayment}
-                  disabled={!paymentMethod || (paymentMethod === "bank" && (!selectedBank || !cbeAccountNumber || !receiptFile)) || isProcessing}
+                  disabled={
+                    !paymentMethod || 
+                    (paymentMethod === "bank" && (!selectedBank || !cbeAccountNumber || !receiptFile)) || 
+                    (fromCart && (!customerDetails.name || !customerDetails.phone)) ||
+                    isProcessing
+                  }
                   className="w-full py-6 text-base font-semibold tracking-wide"
                 >
                   {isProcessing ? (

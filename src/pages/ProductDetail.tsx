@@ -14,7 +14,10 @@ import {
   Palette,
   User,
   Mail,
-  MapPin
+  MapPin,
+  Copy,
+  Check,
+  ShoppingCart
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -24,6 +27,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { apiGet } from "@/lib/api";
+import { useCart } from "@/contexts/CartContext";
+import { toast } from "sonner";
 
 type Category = "Luxury Sofas" | "Arabian Majlis" | "Luxury TV Stands";
 
@@ -82,12 +87,15 @@ function useCountdown(hours: number) {
 const ProductDetail = () => {
   const { productSlug } = useParams<{ productSlug: string }>();
   const navigate = useNavigate();
+  const { addToCart } = useCart();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showOrderForm, setShowOrderForm] = useState(true);
   const [quantity, setQuantity] = useState(1);
+  const [showPhoneNumber, setShowPhoneNumber] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [customerDetails, setCustomerDetails] = useState({
     name: "",
     email: "",
@@ -193,6 +201,38 @@ const ProductDetail = () => {
     if (formElement) {
       formElement.scrollIntoView({ behavior: 'smooth' });
     }
+  };
+
+  const handleCallToReserve = () => {
+    setShowPhoneNumber(true);
+  };
+
+  const handleCopyPhone = async () => {
+    try {
+      await navigator.clipboard.writeText(PHONE_NUMBER);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
+  const handleAddToCart = () => {
+    if (!product) return;
+    
+    addToCart({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      originalPrice: product.originalPrice,
+      discountPrice: product.discountPrice,
+      imageUrl: product.imageUrl,
+      category: product.category,
+      material: product.material,
+      selectedColor: getCurrentColor() || undefined,
+    }, quantity);
+    
+    toast.success(`Added ${quantity} ${product.name} to cart!`);
   };
 
   const handleSubmitOrder = (e: React.FormEvent) => {
@@ -448,15 +488,22 @@ const ProductDetail = () => {
               {/* CTAs */}
               <div className="space-y-3">
                 <button
-                  onClick={handleOrder}
+                  onClick={handleAddToCart}
                   className="w-full flex items-center justify-center gap-3 px-8 py-4 bg-primary text-primary-foreground font-body font-bold text-sm tracking-[0.15em] uppercase rounded-xl hover:bg-gold-light transition-all duration-300 shadow-lg"
                 >
-                  <ShoppingBag className="w-5 h-5" />
-                  Order Now
+                  <ShoppingCart className="w-5 h-5" />
+                  Add to Cart
                 </button>
                 <button
                   onClick={handleOrder}
                   className="w-full flex items-center justify-center gap-3 px-8 py-4 border border-primary text-primary font-body font-semibold text-sm tracking-[0.1em] uppercase rounded-xl hover:bg-primary/10 transition-all duration-300"
+                >
+                  <ShoppingBag className="w-5 h-5" />
+                  Buy Now
+                </button>
+                <button
+                  onClick={handleOrder}
+                  className="w-full flex items-center justify-center gap-3 px-8 py-4 border border-border text-muted-foreground font-body font-semibold text-sm tracking-[0.1em] uppercase rounded-xl hover:bg-primary/10 transition-all duration-300"
                 >
                   <Palette className="w-5 h-5" />
                   Customize and Order Call 0995871152
@@ -468,14 +515,37 @@ const ProductDetail = () => {
                 <p className="font-body text-sm text-muted-foreground text-center mb-4">
                   Speak with our showroom expert
                 </p>
-                <div className="flex justify-center">
-                  <a
-                    href={`tel:${PHONE_NUMBER}`}
-                    className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-500/10 border border-blue-500/30 text-blue-400 rounded-xl hover:bg-blue-500/20 transition-colors font-body text-sm font-semibold"
-                  >
-                    <Phone className="w-4 h-4" />
-                    Call to Reserve
-                  </a>
+                <div className="flex flex-col items-center gap-3">
+                  {!showPhoneNumber ? (
+                    <button
+                      onClick={handleCallToReserve}
+                      className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-500/10 border border-blue-500/30 text-blue-400 rounded-xl hover:bg-blue-500/20 transition-colors font-body text-sm font-semibold"
+                    >
+                      <Phone className="w-4 h-4" />
+                      Call to Reserve
+                    </button>
+                  ) : (
+                    <div className="flex items-center gap-2 px-6 py-3 bg-blue-500/10 border border-blue-500/30 rounded-xl">
+                      <Phone className="w-4 h-4 text-blue-400" />
+                      <a
+                        href={`tel:${PHONE_NUMBER}`}
+                        className="text-blue-400 font-body text-lg font-semibold hover:text-blue-300 transition-colors"
+                      >
+                        {PHONE_NUMBER}
+                      </a>
+                      <button
+                        onClick={handleCopyPhone}
+                        className="ml-2 p-2 hover:bg-blue-500/20 rounded-lg transition-colors"
+                        title="Copy phone number"
+                      >
+                        {copied ? (
+                          <Check className="w-4 h-4 text-green-400" />
+                        ) : (
+                          <Copy className="w-4 h-4 text-blue-400" />
+                        )}
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

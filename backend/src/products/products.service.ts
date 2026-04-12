@@ -17,20 +17,8 @@ export class ProductsService {
     return this.productModel
       .find({
         status: 'Active',
-        $and: [
-          {
-            $or: [
-              { discountPrice: { $exists: true, $ne: null } },
-              { originalPrice: { $exists: true, $ne: null } }
-            ]
-          },
-          {
-            $or: [
-              { discountPrice: { $ne: '' } },
-              { originalPrice: { $ne: '' } }
-            ]
-          }
-        ]
+        originalPrice: { $exists: true, $ne: null, $nin: ['', null] },
+        discountPrice: { $exists: true, $ne: null, $nin: ['', null] }
       })
       .sort({ createdAt: -1 })
       .lean()

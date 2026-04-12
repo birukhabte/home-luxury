@@ -1,15 +1,17 @@
 import { useEffect, useState, useRef } from "react";
 import { motion } from "framer-motion";
-import heroImage from "@/assets/hero-living-room.jpg";
+import heroImage from "@/assets/tv stand/tvmain.jpg";
 import { apiGet } from "@/lib/api";
 import { useNavigate } from "react-router-dom";
-import { X, ChevronLeft, ChevronRight } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, Copy, Check, Phone } from "lucide-react";
 
 const HeroSection = () => {
   const navigate = useNavigate();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
+  const [showPhoneNumber, setShowPhoneNumber] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [heroPromos, setHeroPromos] = useState<
     {
       id: string;
@@ -61,6 +63,26 @@ const HeroSection = () => {
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollBy({ left: 280, behavior: 'smooth' });
     }
+  };
+
+  const handleCallToReserve = () => {
+    setShowPhoneNumber(true);
+  };
+
+  const handleCopyPhone = async () => {
+    try {
+      await navigator.clipboard.writeText("0995871152");
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setSelectedPromo(null);
+    setShowPhoneNumber(false);
+    setCopied(false);
   };
 
   useEffect(() => {
@@ -210,10 +232,11 @@ const HeroSection = () => {
       <div className="absolute inset-0">
         <img
           src={heroImage}
-          alt="Luxury living room with premium sofa and Arabian-inspired design in Addis Ababa"
+          alt="Luxury TV stand with premium materials and elegant design in Addis Ababa"
           width={1920}
           height={1080}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover object-left"
+          style={{ transform: 'scale(2) translateX(-25%)' }}
         />
         <div className="absolute inset-0 bg-gradient-to-r from-black/95 via-black/70 to-black/40" />
         <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/30" />
@@ -438,7 +461,7 @@ const HeroSection = () => {
         <div className="fixed inset-0 z-40 flex items-center justify-center px-4">
           <div
             className="absolute inset-0 bg-black/40"
-            onClick={() => setSelectedPromo(null)}
+            onClick={handleCloseModal}
           />
           <div className="relative z-50 w-full max-w-lg rounded-2xl border border-gold-dark bg-background/95 shadow-2xl backdrop-blur-xl p-6">
             <div className="flex items-start justify-between mb-4">
@@ -455,7 +478,7 @@ const HeroSection = () => {
               </div>
               <button
                 type="button"
-                onClick={() => setSelectedPromo(null)}
+                onClick={handleCloseModal}
                 aria-label="Close promotion details"
                 className="ml-3 text-muted-foreground hover:text-foreground"
               >
@@ -464,7 +487,7 @@ const HeroSection = () => {
             </div>
 
             {selectedPromo.imageUrl && (
-              <div className="w-full h-40 rounded-xl overflow-hidden border border-border/60 mb-4">
+              <div className="w-full h-32 rounded-xl overflow-hidden border border-border/60 mb-4">
                 <img
                   src={selectedPromo.imageUrl}
                   alt={selectedPromo.name}
@@ -529,31 +552,45 @@ const HeroSection = () => {
               <div className="flex flex-wrap justify-end gap-2 sm:ml-auto">
                 <button
                   type="button"
-                  onClick={() => setSelectedPromo(null)}
+                  onClick={handleCloseModal}
                   className="px-4 py-2 rounded-md border border-border text-xs font-body tracking-[0.16em] uppercase text-muted-foreground hover:bg-background/60"
                 >
                   Close
                 </button>
-                <a
-                  href="tel:0995871152"
-                  className="px-4 py-2 rounded-md border border-gold-dark text-xs font-body tracking-[0.16em] uppercase text-foreground hover:bg-primary/10"
-                >
-                  Call to Reserve
-                </a>
-                <a
-                  href={`https://wa.me/251911288820?text=${encodeURIComponent(
-                    `I'm interested in the ${selectedPromo.name} offer (${selectedPromo.discount || ""} OFF).`,
-                  )}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="px-4 py-2 rounded-md border border-emerald-600 text-xs font-body tracking-[0.16em] uppercase text-emerald-500 hover:bg-emerald-600/10"
-                >
-                  WhatsApp Expert
-                </a>
+                {!showPhoneNumber ? (
+                  <button
+                    type="button"
+                    onClick={handleCallToReserve}
+                    className="px-4 py-2 rounded-md border border-gold-dark text-xs font-body tracking-[0.16em] uppercase text-foreground hover:bg-primary/10"
+                  >
+                    Call to Reserve
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-2 px-4 py-2 rounded-md border border-gold-dark bg-primary/5">
+                    <Phone className="w-3 h-3 text-primary" />
+                    <a
+                      href="tel:0995871152"
+                      className="text-primary font-body text-xs font-semibold hover:text-gold-light transition-colors"
+                    >
+                      0995871152
+                    </a>
+                    <button
+                      onClick={handleCopyPhone}
+                      className="ml-1 p-1 hover:bg-primary/10 rounded transition-colors"
+                      title="Copy phone number"
+                    >
+                      {copied ? (
+                        <Check className="w-3 h-3 text-green-400" />
+                      ) : (
+                        <Copy className="w-3 h-3 text-primary" />
+                      )}
+                    </button>
+                  </div>
+                )}
                 <button
                   type="button"
                   onClick={() => {
-                    setSelectedPromo(null);
+                    handleCloseModal();
                     if (selectedPromo.isProduct) {
                       navigate(selectedPromo.link);
                     } else {
