@@ -1,4 +1,5 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+// Remove trailing slash if present
+const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:4000').replace(/\/$/, '');
 
 async function handleResponse<T>(res: Response): Promise<T> {
   if (!res.ok) {
