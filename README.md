@@ -301,36 +301,7 @@ To access the admin panel:
 4. Fill in product details and upload images
 5. Save and publish
 
-## 🐛 Troubleshooting
-
-### Port Already in Use
-```bash
-# Find process using port
-lsof -i :4000
-lsof -i :8080
-
-# Kill process
-kill -9 <PID>
-```
-
-### Docker Permission Denied
-```bash
-# Add user to docker group
-sudo usermod -aG docker $USER
-newgrp docker
-```
-
-### MongoDB Connection Issues
-- Check MongoDB Atlas IP whitelist
-- Verify connection string in `.env`
-- Ensure network connectivity
-
-### Frontend Not Loading
-- Check if backend is running
-- Verify `VITE_API_URL` in `.env`
-- Clear browser cache
-
-## 📦 Deployment
+## � Deploymento
 
 ### Production Deployment
 
@@ -387,5 +358,3 @@ This project is proprietary software. All rights reserved.
 ---
 
 Built with ❤️ for luxury furniture enthusiasts
-// Commit 32 - 2024-05-17 13:08:00
-// Commit 56 - 2024-05-26 17:58:00
