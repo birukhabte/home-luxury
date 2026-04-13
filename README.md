@@ -22,7 +22,7 @@ Here are some screenshots of the application:
 | ![Screenshot 1](public/fur1.png) | Home Page |
 | ![Screenshot 2](public/fur2.png) | Product Catalog |
 | ![Screenshot 3](public/fur3.png) | Product Details |
-| ![Screenshot 4](public/fur4.png) | Admin Dashboard |
+| ![Screenshot 4](public/fur4.png) | Payment Page |
 
 ## 🛠️ Tech Stack
 
