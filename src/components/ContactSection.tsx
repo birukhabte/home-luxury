@@ -61,7 +61,7 @@ const ContactSection = () => {
                 href="tel:0995871152"
                 className="font-body text-sm text-primary hover:text-gold-light transition-colors"
               >
-                091 128 8820
+                0995871152
               </a>
             </motion.div>
 

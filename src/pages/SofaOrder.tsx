@@ -332,7 +332,7 @@ const SofaOrder = () => {
 
                                         {[
                                             { label: "Full Name *", name: "name", type: "text", placeholder: "Your full name", required: true },
-                                            { label: "Phone Number *", name: "phone", type: "tel", placeholder: "e.g. 0911 288 820", required: true },
+                                            { label: "Phone Number *", name: "phone", type: "tel", placeholder: "e.g. 0995871152", required: true },
                                             { label: "Delivery Address *", name: "address", type: "text", placeholder: "Street, Sub-city, Woreda", required: true },
                                             { label: "Preferred Delivery Date", name: "delivery", type: "date", placeholder: "", required: false },
                                         ].map((f) => (
@@ -493,7 +493,7 @@ const SofaOrder = () => {
                                                                 className="w-full font-body text-xs text-muted-foreground file:mr-4 file:py-2 file:px-4 file:border-0 file:bg-primary file:text-primary-foreground file:font-body file:text-xs file:font-semibold file:uppercase file:tracking-widest cursor-pointer" />
                                                         </div>
                                                         <p className="font-body text-xs text-muted-foreground">
-                                                            After transfer, send the receipt to <strong>0911 288 820</strong> on WhatsApp.
+                                                            After transfer, send the receipt to <strong>0995871152</strong> on WhatsApp.
                                                         </p>
                                                     </motion.div>
                                                 )}
@@ -515,7 +515,7 @@ const SofaOrder = () => {
                                                                 className="w-full font-body text-xs text-muted-foreground file:mr-4 file:py-2 file:px-4 file:border-0 file:bg-primary file:text-primary-foreground file:font-body file:text-xs file:font-semibold file:uppercase file:tracking-widest cursor-pointer" />
                                                         </div>
                                                         <p className="font-body text-xs text-muted-foreground">
-                                                            You can also pay via <strong>CBE mobile app</strong> or <strong>online banking</strong>. Send the receipt to <strong>0911 288 820</strong> on WhatsApp.
+                                                            You can also pay via <strong>CBE mobile app</strong> or <strong>online banking</strong>. Send the receipt to <strong>0995871152</strong> on WhatsApp.
                                                         </p>
                                                     </motion.div>
                                                 )}

@@ -353,7 +353,7 @@ const SovereignOrder = () => {
                                                 required
                                                 value={form.phone}
                                                 onChange={handleChange}
-                                                placeholder="e.g. 0911 288 820"
+                                                placeholder="e.g. 0995871152"
                                                 className="w-full bg-muted/20 border border-border text-foreground font-body text-sm px-4 py-3 focus:outline-none focus:border-primary transition-colors placeholder:text-muted-foreground/50"
                                             />
                                         </div>
@@ -625,7 +625,7 @@ const SovereignOrder = () => {
                                                             />
                                                         </div>
                                                         <p className="font-body text-xs text-muted-foreground">
-                                                            After transfer, send the receipt to <strong>0911 288 820</strong> on WhatsApp.
+                                                            After transfer, send the receipt to <strong>0995871152</strong> on WhatsApp.
                                                         </p>
                                                     </motion.div>
                                                 )}
@@ -676,7 +676,7 @@ const SovereignOrder = () => {
                                                             />
                                                         </div>
                                                         <p className="font-body text-xs text-muted-foreground">
-                                                            You can also transfer via <strong>CBE mobile app</strong> or <strong>online banking</strong>. Send the receipt to <strong>0911 288 820</strong> on WhatsApp.
+                                                            You can also transfer via <strong>CBE mobile app</strong> or <strong>online banking</strong>. Send the receipt to <strong>0995871152</strong> on WhatsApp.
                                                         </p>
                                                     </motion.div>
                                                 )}
