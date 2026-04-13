@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import { 
   ArrowLeft, 
@@ -18,6 +18,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCart } from "@/contexts/CartContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 interface OrderSummary {
   productName: string;
@@ -35,16 +37,15 @@ const Payment = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { items: cartItems, clearCart } = useCart();
+  const { user } = useAuth();
   const [orderSummary, setOrderSummary] = useState<OrderSummary | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<"bank" | "cash" | null>(null);
-  const [selectedBank, setSelectedBank] = useState<"cbe" | null>(null);
-  const [cbeAccountNumber, setCbeAccountNumber] = useState("");
-  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<"chapa" | "cash" | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const chapaFormRef = useRef<HTMLFormElement>(null);
   const [customerDetails, setCustomerDetails] = useState({
-    name: "",
-    email: "",
-    phone: "",
+    name: user?.name || "",
+    email: user?.email || "",
+    phone: user?.phone || "",
     address: "",
   });
 
@@ -97,42 +98,48 @@ const Payment = () => {
 
   const handlePayment = async () => {
     if (!orderSummary || !paymentMethod) return;
-    if (paymentMethod === "bank" && (!selectedBank || !cbeAccountNumber || !receiptFile)) return;
     
     // For cart checkout, validate customer details
     if (fromCart && (!customerDetails.name || !customerDetails.phone)) {
-      alert("Please fill in your name and phone number");
+      toast.error("Please fill in your name and phone number");
       return;
     }
 
     setIsProcessing(true);
 
-    // Simulate payment processing
-    setTimeout(() => {
-      // For now, just redirect to success page
-      // In a real implementation, you would submit the order data to your backend
-      console.log("Order submitted:", {
-        orderSummary: fromCart ? {
-          ...orderSummary,
-          customerName: customerDetails.name,
-          customerEmail: customerDetails.email,
-          customerPhone: customerDetails.phone,
-          customerAddress: customerDetails.address,
-        } : orderSummary,
-        cartItems: fromCart ? cartItems : null,
-        paymentMethod,
-        selectedBank,
-        cbeAccountNumber: paymentMethod === "bank" ? cbeAccountNumber : null,
-        receiptFile: paymentMethod === "bank" ? receiptFile : null,
-      });
+    try {
+      if (paymentMethod === "chapa") {
+        // Submit the Chapa form directly
+        if (chapaFormRef.current) {
+          chapaFormRef.current.submit();
+        }
+      } else if (paymentMethod === "cash") {
+        // Cash on delivery - just create order
+        console.log("Order submitted:", {
+          orderSummary: fromCart ? {
+            ...orderSummary,
+            customerName: customerDetails.name,
+            customerEmail: customerDetails.email,
+            customerPhone: customerDetails.phone,
+            customerAddress: customerDetails.address,
+          } : orderSummary,
+          cartItems: fromCart ? cartItems : null,
+          paymentMethod: "cash",
+        });
 
-      // Clear cart if checkout from cart
-      if (fromCart) {
-        clearCart();
+        // Clear cart if checkout from cart
+        if (fromCart) {
+          clearCart();
+        }
+
+        toast.success("Order placed successfully!");
+        navigate("/order-success");
       }
-
-      navigate("/order-success");
-    }, 2000);
+    } catch (error) {
+      console.error("Payment error:", error);
+      toast.error("Payment failed. Please try again.");
+      setIsProcessing(false);
+    }
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -141,6 +148,20 @@ const Payment = () => {
       setReceiptFile(file);
     }
   };
+
+  // Generate transaction reference
+  const txRef = `addis-majlis-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+  
+  // Calculate amount and prepare customer data
+  const amount = parseFloat(orderSummary?.totalAmount.replace(/[^\d.]/g, '') || '0');
+  const customerName = fromCart ? customerDetails.name : orderSummary?.customerName || '';
+  const [firstName, ...lastNameParts] = customerName.split(' ');
+  const lastName = lastNameParts.join(' ') || firstName;
+  const email = fromCart ? customerDetails.email : orderSummary?.customerEmail || 'customer@addismajlis.com';
+  const phone = fromCart ? customerDetails.phone : orderSummary?.customerPhone || '';
+  const description = fromCart 
+    ? `Payment for ${cartItems.length} item(s)` 
+    : `Payment for ${orderSummary?.productName || 'furniture'}`;
 
   if (!orderSummary) {
     return (
@@ -160,6 +181,28 @@ const Payment = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
+
+      {/* Hidden Chapa Payment Form */}
+      <form 
+        ref={chapaFormRef}
+        method="POST" 
+        action="https://api.chapa.co/v1/hosted/pay"
+        style={{ display: 'none' }}
+      >
+        <input type="hidden" name="public_key" value={import.meta.env.VITE_CHAPA_PUBLIC_KEY} />
+        <input type="hidden" name="tx_ref" value={txRef} />
+        <input type="hidden" name="amount" value={amount.toString()} />
+        <input type="hidden" name="currency" value="ETB" />
+        <input type="hidden" name="email" value={email} />
+        <input type="hidden" name="first_name" value={firstName} />
+        <input type="hidden" name="last_name" value={lastName} />
+        <input type="hidden" name="title" value="Addis Majlis Glory" />
+        <input type="hidden" name="description" value={description} />
+        <input type="hidden" name="logo" value="https://chapa.link/asset/images/chapa_swirl.svg" />
+        <input type="hidden" name="callback_url" value={`${window.location.origin}/payment/callback`} />
+        <input type="hidden" name="return_url" value={`${window.location.origin}/payment/verify?tx_ref=${txRef}`} />
+        <input type="hidden" name="meta[phone]" value={phone} />
+      </form>
 
       <section className="pt-32 pb-16 bg-charcoal-gradient">
         <div className="container mx-auto px-6 lg:px-16 max-w-4xl">
@@ -319,109 +362,27 @@ const Payment = () => {
                 <CardTitle className="font-display text-xl">Payment Method</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Bank Transfer */}
+                {/* Chapa Payment */}
                 <div
                   className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                    paymentMethod === "bank"
+                    paymentMethod === "chapa"
                       ? "border-primary bg-primary/5"
                       : "border-border hover:border-primary/50"
                   }`}
-                  onClick={() => {
-                    setPaymentMethod("bank");
-                    if (paymentMethod !== "bank") {
-                      setSelectedBank(null);
-                    }
-                  }}
+                  onClick={() => setPaymentMethod("chapa")}
                 >
                   <div className="flex items-center gap-3">
                     <CreditCard className="w-5 h-5 text-primary" />
                     <div className="flex-1">
-                      <h3 className="font-semibold text-foreground">Bank Transfer</h3>
+                      <h3 className="font-semibold text-foreground">Pay with Chapa</h3>
                       <p className="text-sm text-muted-foreground">
-                        Pay via bank transfer - select your preferred bank
+                        Secure online payment via Chapa - supports all major banks and mobile money
                       </p>
                     </div>
-                    {paymentMethod === "bank" && (
+                    {paymentMethod === "chapa" && (
                       <CheckCircle2 className="w-5 h-5 text-primary" />
                     )}
                   </div>
-                  
-                  {/* Bank Selection */}
-                  {paymentMethod === "bank" && (
-                    <div className="mt-4 ml-8 space-y-4">
-                      <p className="text-sm font-medium text-foreground mb-3">Select Bank:</p>
-                      <div
-                        className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                          selectedBank === "cbe"
-                            ? "border-primary bg-primary/10"
-                            : "border-border hover:border-primary/50"
-                        }`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedBank("cbe");
-                        }}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center">
-                            <span className="text-xs font-bold text-white">CBE</span>
-                          </div>
-                          <div className="flex-1">
-                            <h4 className="font-medium text-foreground">Commercial Bank of Ethiopia</h4>
-                            <p className="text-xs text-muted-foreground">Account: 1000123456789</p>
-                          </div>
-                          {selectedBank === "cbe" && (
-                            <CheckCircle2 className="w-4 h-4 text-primary" />
-                          )}
-                        </div>
-                      </div>
-
-                      {/* CBE Payment Details */}
-                      {selectedBank === "cbe" && (
-                        <div className="space-y-4 p-4 bg-muted/20 rounded-lg">
-                          <div className="space-y-2">
-                            <Label htmlFor="cbe-account" className="text-sm font-medium">
-                              Your CBE Account Number *
-                            </Label>
-                            <Input
-                              id="cbe-account"
-                              type="text"
-                              value={cbeAccountNumber}
-                              onChange={(e) => setCbeAccountNumber(e.target.value)}
-                              placeholder="Enter your CBE account number"
-                              required
-                              className="h-10"
-                            />
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label htmlFor="receipt-upload" className="text-sm font-medium">
-                              Upload Payment Receipt *
-                            </Label>
-                            <Input
-                              id="receipt-upload"
-                              type="file"
-                              accept="image/*,.pdf"
-                              onChange={handleFileUpload}
-                              required
-                              className="h-10"
-                            />
-                            {receiptFile && (
-                              <p className="text-xs text-green-600">
-                                ✓ {receiptFile.name} uploaded
-                              </p>
-                            )}
-                          </div>
-
-                          <div className="text-xs text-muted-foreground">
-                            <p className="font-medium mb-1">Payment Instructions:</p>
-                            <p>1. Transfer the total amount to CBE Account: 1000123456789</p>
-                            <p>2. Enter your CBE account number above</p>
-                            <p>3. Upload a clear photo of your payment receipt</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </div>
 
                 {/* Cash on Delivery */}
@@ -453,7 +414,9 @@ const Payment = () => {
                   <div>
                     <p className="text-sm text-foreground font-medium">Secure Transaction</p>
                     <p className="text-xs text-muted-foreground">
-                      Your order will be processed securely through WhatsApp with our sales team
+                      {paymentMethod === "chapa" 
+                        ? "Your payment is processed securely through Chapa's encrypted payment gateway"
+                        : "Your order will be confirmed and delivered with cash payment option"}
                     </p>
                   </div>
                 </div>
@@ -463,7 +426,6 @@ const Payment = () => {
                   onClick={handlePayment}
                   disabled={
                     !paymentMethod || 
-                    (paymentMethod === "bank" && (!selectedBank || !cbeAccountNumber || !receiptFile)) || 
                     (fromCart && (!customerDetails.name || !customerDetails.phone)) ||
                     isProcessing
                   }
@@ -477,7 +439,7 @@ const Payment = () => {
                   ) : (
                     <div className="flex items-center gap-2">
                       <Package className="w-5 h-5" />
-                      Complete Order
+                      {paymentMethod === "chapa" ? "Proceed to Payment" : "Complete Order"}
                     </div>
                   )}
                 </Button>

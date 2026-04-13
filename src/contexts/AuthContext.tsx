@@ -57,6 +57,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = () => {
     setUser(null);
+    // Clear cart from localStorage when user logs out
+    localStorage.removeItem('cart');
   };
 
   return (

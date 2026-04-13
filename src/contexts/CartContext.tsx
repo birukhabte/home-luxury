@@ -35,6 +35,18 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem('cart', JSON.stringify(items));
   }, [items]);
 
+  // Listen for storage changes (e.g., when cart is cleared on logout)
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'cart' && e.newValue === null) {
+        setItems([]);
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
   const addToCart = (item: Omit<CartItem, 'quantity'>, quantity = 1) => {
     setItems((prev) => {
       const existing = prev.find((i) => i.id === item.id && i.selectedColor === item.selectedColor);
@@ -65,6 +77,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   const clearCart = () => {
     setItems([]);
+    localStorage.removeItem('cart');
   };
 
   const getTotalItems = () => {

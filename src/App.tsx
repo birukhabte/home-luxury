@@ -14,6 +14,7 @@ import ProductDetail from "./pages/ProductDetail.tsx";
 import Cart from "./pages/Cart.tsx";
 import Login from "./pages/Login.tsx";
 import Payment from "./pages/Payment.tsx";
+import PaymentVerify from "./pages/PaymentVerify.tsx";
 import OrderSuccess from "./pages/OrderSuccess.tsx";
 import SovereignOrder from "./pages/SovereignOrder.tsx";
 import SofaOrder from "./pages/SofaOrder.tsx";
@@ -47,6 +48,7 @@ const App = () => (
               <Route path="/cart" element={<Cart />} />
               <Route path="/login" element={<Login />} />
               <Route path="/payment" element={<Payment />} />
+              <Route path="/payment/verify" element={<PaymentVerify />} />
               <Route path="/order-success" element={<OrderSuccess />} />
               <Route path="/sovereign-order" element={<SovereignOrder />} />
               <Route path="/sofa-order/:sofaId" element={<SofaOrder />} />

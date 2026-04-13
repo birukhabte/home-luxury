@@ -8,6 +8,7 @@ import { OrdersModule } from './orders/orders.module';
 import { UsersModule } from './users/users.module';
 import { PromotionsModule } from './promotions/promotions.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
+import { ChapaModule } from './chapa/chapa.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
     UsersModule,
     PromotionsModule,
     CloudinaryModule,
+    ChapaModule,
   ],
   controllers: [AppController],
 })
