@@ -5,14 +5,26 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  
+  // CORS configuration
+  const allowedOrigins = [
+    /^http:\/\/localhost:\d+$/,
+    process.env.FRONTEND_URL,
+    /^https:\/\/.*\.vercel\.app$/,
+  ].filter(Boolean);
+
   app.enableCors({
-    origin: [/^http:\/\/localhost:\d+$/],
+    origin: allowedOrigins,
     credentials: true,
   });
+  
   app.useStaticAssets(join(__dirname, '..', 'uploads'), {
     prefix: '/uploads/',
   });
-  await app.listen(process.env.PORT || 4000);
+  
+  const port = process.env.PORT || 4000;
+  await app.listen(port);
+  console.log(`Application is running on port ${port}`);
 }
 
 bootstrap();
