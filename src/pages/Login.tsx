@@ -38,6 +38,17 @@ const Login = () => {
     try {
       await login(loginEmail, loginPassword);
       toast.success("Login successful!");
+      
+      // Check if user is admin after login
+      const savedUser = localStorage.getItem('user');
+      if (savedUser) {
+        const userData = JSON.parse(savedUser);
+        if (userData.role === 'admin') {
+          navigate('/admin');
+          return;
+        }
+      }
+      
       navigate(redirectTo);
     } catch (error) {
       toast.error("Login failed. Please check your credentials.");

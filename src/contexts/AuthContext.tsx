@@ -1,15 +1,19 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { apiPost } from '@/lib/api';
 
 interface User {
+  _id: string;
   id: string;
   name: string;
   email: string;
-  phone: string;
+  phone?: string;
+  role: 'admin' | 'customer';
 }
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
+  isAdmin: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string, phone: string) => Promise<void>;
   logout: () => void;
@@ -32,27 +36,47 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [user]);
 
   const login = async (email: string, password: string) => {
-    // TODO: Implement actual API call
-    // For now, simulate login
-    const mockUser: User = {
-      id: '1',
-      name: 'User',
-      email,
-      phone: '0911234567',
-    };
-    setUser(mockUser);
+    try {
+      const response = await apiPost<any, { email: string; password: string }>(
+        '/users/login',
+        { email, password }
+      );
+      
+      const userData: User = {
+        _id: response._id,
+        id: response._id,
+        name: response.name,
+        email: response.email,
+        phone: response.phone || '',
+        role: response.role || 'customer',
+      };
+      
+      setUser(userData);
+    } catch (error) {
+      throw new Error('Invalid email or password');
+    }
   };
 
   const register = async (name: string, email: string, password: string, phone: string) => {
-    // TODO: Implement actual API call
-    // For now, simulate registration
-    const mockUser: User = {
-      id: '1',
-      name,
-      email,
-      phone,
-    };
-    setUser(mockUser);
+    try {
+      const response = await apiPost<any, { name: string; email: string; passwordHash: string; phone?: string }>(
+        '/users',
+        { name, email, passwordHash: password, phone }
+      );
+      
+      const userData: User = {
+        _id: response._id,
+        id: response._id,
+        name: response.name,
+        email: response.email,
+        phone: response.phone || phone,
+        role: response.role || 'customer',
+      };
+      
+      setUser(userData);
+    } catch (error) {
+      throw new Error('Registration failed');
+    }
   };
 
   const logout = () => {
@@ -66,6 +90,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       value={{
         user,
         isAuthenticated: !!user,
+        isAdmin: user?.role === 'admin',
         login,
         register,
         logout,
