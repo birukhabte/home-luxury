@@ -7,7 +7,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { Plus, Pencil, Trash2, Search } from "lucide-react";
 import { apiDelete, apiGet, apiPost, apiPut, apiUpload } from "@/lib/api";
 
@@ -22,28 +21,15 @@ interface Product {
   originalPrice?: string;
   discountPrice?: string;
   material: string;
-  description?: string;
   status: Status;
   imageUrl?: string;
-  imageColor?: string;
   imageUrls?: string[];
-  imageColors?: string[];
 }
 
 const initialProducts: Product[] = [];
 
 const CATEGORIES: Category[] = ["Luxury Sofas", "Arabian Majlis", "Luxury TV Stands"];
 const STATUSES: Status[] = ["Active", "Draft", "Out of Stock"];
-
-// Helper function to validate URL format
-const isValidUrl = (url: string): boolean => {
-  try {
-    new URL(url);
-    return url.startsWith('http://') || url.startsWith('https://');
-  } catch {
-    return false;
-  }
-};
 
 const statusBadge: Record<Status, string> = {
   Active: "bg-green-500/20 text-green-400 border-green-500/30",
@@ -55,23 +41,18 @@ const emptyForm = {
   name: "",
   category: "Luxury TV Stands" as Category,
   material: "",
-  description: "",
   price: "",
   originalPrice: "",
   discountPrice: "",
   status: "Active" as Status,
   imageUrl: "",
-  imageColor: "",
   imageUrls: [] as string[],
-  imageColors: [] as string[],
 };
 
 const Products = () => {
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [search, setSearch] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState<string>("All");
-  const [statusFilter, setStatusFilter] = useState<string>("All");
-  const [materialFilter, setMaterialFilter] = useState<string>("All");
+  const [filter, setFilter] = useState<string>("All");
   const [deleteDialog, setDeleteDialog] = useState<Product | null>(null);
   const [addDialog, setAddDialog] = useState(false);
   const [editDialog, setEditDialog] = useState<Product | null>(null);
@@ -88,12 +69,9 @@ const Products = () => {
           originalPrice: p.originalPrice,
           discountPrice: p.discountPrice,
           material: p.material,
-          description: p.description,
           status: p.status,
           imageUrl: p.imageUrl,
-          imageColor: p.imageColor,
           imageUrls: p.imageUrls || [],
-          imageColors: p.imageColors || [],
         }));
         setProducts(mapped);
       })
@@ -103,33 +81,10 @@ const Products = () => {
   }, []);
 
   const filtered = products.filter((p) => {
-    const matchSearch = p.name.toLowerCase().includes(search.toLowerCase()) || 
-                       p.material.toLowerCase().includes(search.toLowerCase()) ||
-                       (p.description && p.description.toLowerCase().includes(search.toLowerCase()));
-    const matchCategory = categoryFilter === "All" || p.category === categoryFilter;
-    const matchStatus = statusFilter === "All" || p.status === statusFilter;
-    const matchMaterial = materialFilter === "All" || 
-                         p.material.toLowerCase().includes(materialFilter.toLowerCase());
-    return matchSearch && matchCategory && matchStatus && matchMaterial;
+    const matchSearch = p.name.toLowerCase().includes(search.toLowerCase()) || p.material.toLowerCase().includes(search.toLowerCase());
+    const matchFilter = filter === "All" || p.category === filter;
+    return matchSearch && matchFilter;
   });
-
-  // Get unique materials for filter dropdown
-  const uniqueMaterials = Array.from(new Set(products.map(p => p.material.split(/[&,\s]+/)[0])))
-    .filter(Boolean)
-    .sort();
-
-  // Calculate stats for dashboard
-  const stats = {
-    total: products.length,
-    active: products.filter(p => p.status === "Active").length,
-    draft: products.filter(p => p.status === "Draft").length,
-    outOfStock: products.filter(p => p.status === "Out of Stock").length,
-    byCategoryActive: {
-      "Luxury Sofas": products.filter(p => p.category === "Luxury Sofas" && p.status === "Active").length,
-      "Arabian Majlis": products.filter(p => p.category === "Arabian Majlis" && p.status === "Active").length,
-      "Luxury TV Stands": products.filter(p => p.category === "Luxury TV Stands" && p.status === "Active").length,
-    }
-  };
 
   const handleDelete = async () => {
     if (!deleteDialog) return;
@@ -154,51 +109,26 @@ const Products = () => {
       name: p.name,
       category: p.category,
       material: p.material,
-      description: p.description || "",
       price: p.price,
       originalPrice: p.originalPrice || "",
       discountPrice: p.discountPrice || "",
       status: p.status,
       imageUrl: p.imageUrl || "",
-      imageColor: p.imageColor || "",
       imageUrls: p.imageUrls || [],
-      imageColors: p.imageColors || [],
     });
     setAddDialog(false);
     setEditDialog(p);
   };
 
   const handleAdd = async () => {
-    if (!form.name.trim() || !form.material.trim() || !form.originalPrice.trim()) {
-      alert("Please fill in all required fields: Product Name, Material, and Original Price.");
-      return;
-    }
-    
-    // Validate that at least one image is provided
-    const hasValidPrimaryImage = form.imageUrl && isValidUrl(form.imageUrl);
-    const hasValidAdditionalImages = form.imageUrls?.some(url => url.trim() !== "" && isValidUrl(url));
-    
-    if (!hasValidPrimaryImage && !hasValidAdditionalImages) {
-      alert("Please provide at least one valid image URL.");
-      return;
-    }
-    
+    if (!form.name.trim() || !form.material.trim() || !form.originalPrice.trim()) return;
     // Use originalPrice as the canonical price; include discountPrice if set
     const payload = {
       ...form,
       price: form.originalPrice,
       originalPrice: form.originalPrice,
       discountPrice: form.discountPrice || undefined,
-      // Clean up imageUrls to remove empty strings
-      imageUrls: form.imageUrls?.filter(url => url.trim() !== "" && isValidUrl(url)) || [],
-      // Clean up imageColors to match imageUrls length
-      imageColors: (form.imageUrls?.filter(url => url.trim() !== "" && isValidUrl(url)) || []).map((_, index) => 
-        form.imageColors?.[index] || ""
-      ),
     };
-    
-    console.log('Adding product with payload:', payload);
-    
     try {
       const createdRaw = await apiPost<any, Omit<Product, "id">>("/products", payload as Omit<Product, "id">);
       const created: Product = {
@@ -209,12 +139,9 @@ const Products = () => {
         originalPrice: createdRaw.originalPrice,
         discountPrice: createdRaw.discountPrice,
         material: createdRaw.material,
-        description: createdRaw.description,
         status: createdRaw.status,
         imageUrl: createdRaw.imageUrl,
-        imageColor: createdRaw.imageColor,
         imageUrls: createdRaw.imageUrls || [],
-        imageColors: createdRaw.imageColors || [],
       };
       setProducts((prev) => [...prev, created]);
       setAddDialog(false);
@@ -224,35 +151,13 @@ const Products = () => {
   };
 
   const handleEdit = async () => {
-    if (!editDialog || !form.name.trim() || !form.material.trim()) {
-      alert("Please fill in all required fields: Product Name and Material.");
-      return;
-    }
-    
-    // Validate that at least one image is provided
-    const hasValidPrimaryImage = form.imageUrl && isValidUrl(form.imageUrl);
-    const hasValidAdditionalImages = form.imageUrls?.some(url => url.trim() !== "" && isValidUrl(url));
-    
-    if (!hasValidPrimaryImage && !hasValidAdditionalImages) {
-      alert("Please provide at least one valid image URL.");
-      return;
-    }
-    
+    if (!editDialog || !form.name.trim()) return;
     const payload = {
       ...form,
       price: form.originalPrice || form.price,
       originalPrice: form.originalPrice,
       discountPrice: form.discountPrice || undefined,
-      // Clean up imageUrls to remove empty strings
-      imageUrls: form.imageUrls?.filter(url => url.trim() !== "" && isValidUrl(url)) || [],
-      // Clean up imageColors to match imageUrls length
-      imageColors: (form.imageUrls?.filter(url => url.trim() !== "" && isValidUrl(url)) || []).map((_, index) => 
-        form.imageColors?.[index] || ""
-      ),
     };
-    
-    console.log('Updating product with payload:', payload);
-    
     try {
       const updatedRaw = await apiPut<any, Omit<Product, "id">>(`/products/${editDialog.id}`, payload as Omit<Product, "id">);
       const updated: Product = {
@@ -263,12 +168,9 @@ const Products = () => {
         originalPrice: updatedRaw.originalPrice,
         discountPrice: updatedRaw.discountPrice,
         material: updatedRaw.material,
-        description: updatedRaw.description,
         status: updatedRaw.status,
         imageUrl: updatedRaw.imageUrl,
-        imageColor: updatedRaw.imageColor,
         imageUrls: updatedRaw.imageUrls || [],
-        imageColors: updatedRaw.imageColors || [],
       };
       setProducts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
       setEditDialog(null);
@@ -284,7 +186,7 @@ const Products = () => {
     return Math.round(((orig - disc) / orig) * 100);
   })();
 
-  const renderProductForm = () => (
+  const ProductForm = () => (
     <div className="space-y-4 py-2">
       <div className="space-y-1.5">
         <Label htmlFor="prod-name">Product Name</Label>
@@ -302,29 +204,8 @@ const Products = () => {
         </Select>
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="prod-material">Material & Construction</Label>
-        <Textarea 
-          id="prod-material" 
-          placeholder="e.g. Premium Italian leather with hand-tufted detailing over kiln-dried hardwood frame. Brushed gold legs with soft-close mechanisms." 
-          value={form.material} 
-          onChange={(e) => setForm({ ...form, material: e.target.value })} 
-          className="bg-secondary border-border min-h-[80px] resize-y" 
-          rows={3}
-        />
-        <p className="text-[11px] text-muted-foreground">Describe materials, construction details, and key features</p>
-      </div>
-      
-      <div className="space-y-1.5">
-        <Label htmlFor="prod-description">Product Description</Label>
-        <Textarea 
-          id="prod-description" 
-          placeholder="e.g. Sink into the embrace of luxury with this masterfully crafted sofa. Each piece combines traditional craftsmanship with modern comfort, designed for Addis Ababa's most discerning homes where every detail whispers prestige." 
-          value={form.description} 
-          onChange={(e) => setForm({ ...form, description: e.target.value })} 
-          className="bg-secondary border-border min-h-[100px] resize-y" 
-          rows={4}
-        />
-        <p className="text-[11px] text-muted-foreground">Marketing description that will be shown to customers</p>
+        <Label htmlFor="prod-material">Material</Label>
+        <Input id="prod-material" placeholder="e.g. Walnut & Brass" value={form.material} onChange={(e) => setForm({ ...form, material: e.target.value })} className="bg-secondary border-border" />
       </div>
 
       {/* ── Pricing Information ── */}
@@ -363,218 +244,16 @@ const Products = () => {
           )}
         </div>
       </div>
-      
-      {/* ── Image Management ── */}
-      <div className="rounded-lg border border-border/60 bg-secondary/40 p-4 space-y-3">
-        <p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground">Image Management</p>
-        
-        {/* Primary Image URL */}
-        <div className="space-y-1.5">
-          <Label htmlFor="prod-primary-image">Primary Image URL</Label>
-          <Input
-            id="prod-primary-image"
-            placeholder="https://example.com/image1.jpg"
-            value={form.imageUrl}
-            onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
-            className={`bg-secondary border-border ${
-              form.imageUrl && !isValidUrl(form.imageUrl) ? 'border-red-400' : ''
-            }`}
-          />
-          {form.imageUrl && !isValidUrl(form.imageUrl) && (
-            <p className="text-[11px] text-red-400">Please enter a valid URL starting with http:// or https://</p>
-          )}
-          <p className="text-[11px] text-muted-foreground">Main product image (will be used as thumbnail)</p>
-        </div>
-
-        {/* Primary Image Color */}
-        <div className="space-y-1.5">
-          <Label htmlFor="prod-primary-color">Primary Image Color (Optional)</Label>
-          <Input
-            id="prod-primary-color"
-            placeholder="e.g. Navy Blue, Burgundy, Emerald Green"
-            value={form.imageColor}
-            onChange={(e) => setForm({ ...form, imageColor: e.target.value })}
-            className="bg-secondary border-border"
-          />
-          <p className="text-[11px] text-muted-foreground">Specify the color/variant shown in the primary image</p>
-        </div>
-
-        {/* Additional Image URLs */}
-        <div className="space-y-2">
-          <Label>Additional Images (up to 4 more)</Label>
-          {Array.from({ length: 4 }).map((_, index) => {
-            const currentUrls = form.imageUrls || [];
-            const currentColors = form.imageColors || [];
-            const urlValue = currentUrls[index] || "";
-            const colorValue = currentColors[index] || "";
-            
-            return (
-              <div key={index} className="space-y-2 p-3 border border-border/40 rounded-lg bg-secondary/20">
-                <div className="flex items-center gap-2">
-                  <Input
-                    placeholder={`https://example.com/image${index + 2}.jpg`}
-                    value={urlValue}
-                    onChange={(e) => {
-                      const newUrls = [...currentUrls];
-                      if (e.target.value.trim() === "") {
-                        // Remove empty URLs and compact array
-                        newUrls.splice(index, 1);
-                        // Also remove corresponding color
-                        const newColors = [...currentColors];
-                        newColors.splice(index, 1);
-                        setForm({ ...form, imageUrls: newUrls, imageColors: newColors });
-                      } else {
-                        // Set or update URL at index
-                        newUrls[index] = e.target.value;
-                        // Clean up empty strings
-                        const cleanUrls = newUrls.filter(url => url && url.trim() !== "");
-                        setForm({ ...form, imageUrls: cleanUrls });
-                      }
-                    }}
-                    className={`bg-secondary border-border flex-1 ${
-                      urlValue && !isValidUrl(urlValue) ? 'border-red-400' : ''
-                    }`}
-                  />
-                  {urlValue && !isValidUrl(urlValue) && (
-                    <span className="text-[10px] text-red-400 whitespace-nowrap">Invalid URL</span>
-                  )}
-                  {urlValue && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const newUrls = [...currentUrls];
-                        const newColors = [...currentColors];
-                        newUrls.splice(index, 1);
-                        newColors.splice(index, 1);
-                        setForm({ ...form, imageUrls: newUrls, imageColors: newColors });
-                      }}
-                      className="px-2 py-1 text-xs text-red-400 hover:text-red-300 border border-red-400/30 rounded hover:bg-red-400/10 transition-colors"
-                    >
-                      Remove
-                    </button>
-                  )}
-                </div>
-                
-                {/* Color field for this image */}
-                {urlValue && (
-                  <div className="flex items-center gap-2">
-                    <Input
-                      placeholder="Color/variant (optional)"
-                      value={colorValue}
-                      onChange={(e) => {
-                        const newColors = [...currentColors];
-                        newColors[index] = e.target.value;
-                        setForm({ ...form, imageColors: newColors });
-                      }}
-                      className="bg-secondary border-border text-xs"
-                    />
-                    <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-                      Image {index + 2} color
-                    </span>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-          <p className="text-[11px] text-muted-foreground">
-            Total images: {1 + (form.imageUrls?.filter(url => url.trim() !== "").length || 0)} / 5
-          </p>
-        </div>
-
-        {/* Image Preview */}
-        {(form.imageUrl || (form.imageUrls && form.imageUrls.length > 0)) && (
-          <div className="border-t border-border/40 pt-3">
-            <Label className="text-xs">Image Preview</Label>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {form.imageUrl && (
-                <div className="relative group">
-                  <img
-                    src={form.imageUrl}
-                    alt="Primary"
-                    className="w-16 h-16 object-cover rounded border border-border"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                    }}
-                  />
-                  <div className="absolute -top-1 -left-1 bg-primary text-primary-foreground text-[8px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
-                    1
-                  </div>
-                  {form.imageColor && (
-                    <div className="absolute -bottom-1 left-0 right-0 bg-black/80 text-white text-[8px] px-1 py-0.5 rounded-b text-center truncate">
-                      {form.imageColor}
-                    </div>
-                  )}
-                </div>
-              )}
-              {form.imageUrls?.filter(url => url.trim() !== "").map((url, index) => (
-                <div key={index} className="relative group">
-                  <img
-                    src={url}
-                    alt={`Additional ${index + 1}`}
-                    className="w-16 h-16 object-cover rounded border border-border"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                    }}
-                  />
-                  <div className="absolute -top-1 -left-1 bg-secondary text-foreground text-[8px] font-bold rounded-full w-4 h-4 flex items-center justify-center border border-border">
-                    {index + 2}
-                  </div>
-                  {form.imageColors?.[index] && (
-                    <div className="absolute -bottom-1 left-0 right-0 bg-black/80 text-white text-[8px] px-1 py-0.5 rounded-b text-center truncate">
-                      {form.imageColors[index]}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* File Upload Alternative */}
-        <div className="border-t border-border/40 pt-3">
-          <Label htmlFor="prod-images-upload">Or Upload Images (max 5 total)</Label>
-          <Input
-            id="prod-images-upload"
-            type="file"
-            multiple
-            accept="image/*"
-            className="bg-secondary border-border mt-1"
-            onChange={async (e) => {
-              const files = e.target.files;
-              if (!files) return;
-              
-              const currentTotal = 1 + (form.imageUrls?.filter(url => url.trim() !== "").length || 0);
-              const remaining = 5 - currentTotal;
-              if (remaining <= 0) return;
-
-              const selected = Array.from(files).slice(0, remaining);
-              if (selected.length === 0) return;
-
-              const data = new FormData();
-              selected.forEach((file) => data.append("files", file));
-
-              try {
-                const res = await apiUpload<{ urls: string[] }>("/products/upload-images", data);
-                const newUrls = res.urls || [];
-                setForm((prev) => ({
-                  ...prev,
-                  imageUrls: [...(prev.imageUrls || []).filter(url => url.trim() !== ""), ...newUrls].slice(0, 4),
-                  // Initialize empty colors for new images
-                  imageColors: [...(prev.imageColors || []), ...Array(newUrls.length).fill("")].slice(0, 4),
-                }));
-              } catch (err) {
-                console.error("Failed to upload images", err);
-              } finally {
-                e.target.value = "";
-              }
-            }}
-          />
-          <p className="text-[11px] text-muted-foreground mt-1">
-            Upload files to automatically populate image URLs
-          </p>
-        </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="prod-image">Image URL</Label>
+        <Input
+          id="prod-image"
+          placeholder="https://..."
+          value={form.imageUrl}
+          onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
+          className="bg-secondary border-border"
+        />
       </div>
-      
       <div className="space-y-1.5">
         <Label>Status</Label>
         <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as Status })}>
@@ -585,6 +264,56 @@ const Products = () => {
             {STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
           </SelectContent>
         </Select>
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="prod-image">Primary Image URL</Label>
+        <Input
+          id="prod-image"
+          placeholder="https://..."
+          value={form.imageUrl}
+          onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
+          className="bg-secondary border-border"
+        />
+        <p className="text-[11px] text-muted-foreground mt-1">Optional main image URL for this product.</p>
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="prod-images-upload">Upload Images (max 5)</Label>
+        <Input
+          id="prod-images-upload"
+          type="file"
+          multiple
+          accept="image/*"
+          className="bg-secondary border-border"
+          onChange={async (e) => {
+            const files = e.target.files;
+            if (!files) return;
+            const remaining = 5 - (form.imageUrls?.length || 0);
+            if (remaining <= 0) return;
+
+            const selected = Array.from(files).slice(0, remaining);
+            if (selected.length === 0) return;
+
+            const data = new FormData();
+            selected.forEach((file) => data.append("files", file));
+
+            try {
+              const res = await apiUpload<{ urls: string[] }>("/products/upload-images", data);
+              setForm((prev) => ({
+                ...prev,
+                imageUrls: [...(prev.imageUrls || []), ...(res.urls || [])].slice(0, 5),
+              }));
+            } catch (err) {
+              console.error("Failed to upload images", err);
+            } finally {
+              e.target.value = "";
+            }
+          }}
+        />
+        {form.imageUrls && form.imageUrls.length > 0 && (
+          <p className="text-[11px] text-muted-foreground">
+            {form.imageUrls.length} image{form.imageUrls.length > 1 ? "s" : ""} attached.
+          </p>
+        )}
       </div>
     </div>
   );
@@ -602,168 +331,30 @@ const Products = () => {
         </Button>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
-        <Card className="bg-card border-border">
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-foreground">{stats.total}</div>
-            <p className="text-xs text-muted-foreground">Total Products</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-card border-border">
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-green-400">{stats.active}</div>
-            <p className="text-xs text-muted-foreground">Active</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-card border-border">
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-yellow-400">{stats.draft}</div>
-            <p className="text-xs text-muted-foreground">Draft</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-card border-border">
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-red-400">{stats.outOfStock}</div>
-            <p className="text-xs text-muted-foreground">Out of Stock</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-card border-border">
-          <CardContent className="p-4">
-            <div className="text-lg font-bold text-primary">{stats.byCategoryActive["Luxury Sofas"]}</div>
-            <p className="text-xs text-muted-foreground">Active Sofas</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-card border-border">
-          <CardContent className="p-4">
-            <div className="text-lg font-bold text-primary">{stats.byCategoryActive["Arabian Majlis"]}</div>
-            <p className="text-xs text-muted-foreground">Active Majlis</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-card border-border">
-          <CardContent className="p-4">
-            <div className="text-lg font-bold text-primary">{stats.byCategoryActive["Luxury TV Stands"]}</div>
-            <p className="text-xs text-muted-foreground">Active TV Stands</p>
-          </CardContent>
-        </Card>
-      </div>
-
       <Card className="bg-card border-border">
         <CardHeader className="pb-3">
-          <div className="flex flex-col gap-4">
-            {/* Search Bar */}
-            <div className="relative flex-1">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <div className="relative flex-1 w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search products by name, material, or description..."
+                placeholder="Search products..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-9 bg-secondary border-border"
               />
             </div>
-            
-            {/* Filter Controls */}
-            <div className="flex flex-col sm:flex-row gap-3">
-              {/* Category Filter */}
-              <div className="flex flex-col gap-2">
-                <Label className="text-xs font-semibold text-muted-foreground">CATEGORY</Label>
-                <div className="flex flex-wrap gap-2">
-                  {["All", ...CATEGORIES].map((cat) => (
-                    <Button
-                      key={cat}
-                      variant={categoryFilter === cat ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setCategoryFilter(cat)}
-                      className="text-xs"
-                    >
-                      {cat === "All" ? "All Categories" : cat}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-              
-              {/* Status Filter */}
-              <div className="flex flex-col gap-2">
-                <Label className="text-xs font-semibold text-muted-foreground">STATUS</Label>
-                <div className="flex flex-wrap gap-2">
-                  {["All", ...STATUSES].map((status) => (
-                    <Button
-                      key={status}
-                      variant={statusFilter === status ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setStatusFilter(status)}
-                      className="text-xs"
-                    >
-                      {status === "All" ? "All Status" : status}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-              
-              {/* Material Filter */}
-              {uniqueMaterials.length > 0 && (
-                <div className="flex flex-col gap-2">
-                  <Label className="text-xs font-semibold text-muted-foreground">MATERIAL</Label>
-                  <Select value={materialFilter} onValueChange={setMaterialFilter}>
-                    <SelectTrigger className="w-[180px] bg-secondary border-border">
-                      <SelectValue placeholder="Filter by material" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="All">All Materials</SelectItem>
-                      {uniqueMaterials.map((material) => (
-                        <SelectItem key={material} value={material}>
-                          {material}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-            </div>
-            
-            {/* Active Filters Summary */}
-            {(categoryFilter !== "All" || statusFilter !== "All" || materialFilter !== "All" || search) && (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span>Active filters:</span>
-                {search && (
-                  <Badge variant="secondary" className="text-xs">
-                    Search: "{search}"
-                  </Badge>
-                )}
-                {categoryFilter !== "All" && (
-                  <Badge variant="secondary" className="text-xs">
-                    Category: {categoryFilter}
-                  </Badge>
-                )}
-                {statusFilter !== "All" && (
-                  <Badge variant="secondary" className="text-xs">
-                    Status: {statusFilter}
-                  </Badge>
-                )}
-                {materialFilter !== "All" && (
-                  <Badge variant="secondary" className="text-xs">
-                    Material: {materialFilter}
-                  </Badge>
-                )}
+            <div className="flex flex-wrap gap-2">
+              {["All", ...CATEGORIES].map((cat) => (
                 <Button
-                  variant="ghost"
+                  key={cat}
+                  variant={filter === cat ? "default" : "outline"}
                   size="sm"
-                  onClick={() => {
-                    setSearch("");
-                    setCategoryFilter("All");
-                    setStatusFilter("All");
-                    setMaterialFilter("All");
-                  }}
-                  className="text-xs h-6 px-2"
+                  onClick={() => setFilter(cat)}
+                  className="text-xs"
                 >
-                  Clear all
+                  {cat}
                 </Button>
-              </div>
-            )}
-            
-            {/* Results Summary */}
-            <div className="text-xs text-muted-foreground">
-              Showing {filtered.length} of {products.length} products
+              ))}
             </div>
           </div>
         </CardHeader>
@@ -787,25 +378,11 @@ const Products = () => {
                   <TableRow key={product.id} className="border-border">
                     <TableCell className="w-[72px]">
                       {thumb ? (
-                        <div className="relative">
-                          <img
-                            src={thumb}
-                            alt={product.name}
-                            className="h-12 w-12 rounded-md object-cover border border-border"
-                          />
-                          {/* Show color info if available */}
-                          {(product.imageColor || (product.imageColors && product.imageColors.some(c => c))) && (
-                            <div className="absolute -bottom-1 left-0 right-0 bg-black/80 text-white text-[8px] px-1 py-0.5 rounded-b text-center truncate">
-                              {product.imageColor || product.imageColors?.find(c => c) || ""}
-                            </div>
-                          )}
-                          {/* Show image count if there are multiple images */}
-                          {((product.imageUrls?.filter(url => url.trim() !== "").length || 0) > 0) && (
-                            <div className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                              {1 + (product.imageUrls?.filter(url => url.trim() !== "").length || 0)}
-                            </div>
-                          )}
-                        </div>
+                        <img
+                          src={thumb}
+                          alt={product.name}
+                          className="h-12 w-12 rounded-md object-cover border border-border"
+                        />
                       ) : (
                         <div className="h-12 w-12 rounded-md border border-dashed border-border flex items-center justify-center text-[10px] text-muted-foreground">
                           No image
@@ -814,11 +391,7 @@ const Products = () => {
                     </TableCell>
                     <TableCell className="font-medium text-foreground">{product.name}</TableCell>
                     <TableCell className="text-muted-foreground text-sm">{product.category}</TableCell>
-                    <TableCell className="text-muted-foreground text-sm max-w-[200px]">
-                      <div className="truncate" title={product.material}>
-                        {product.material}
-                      </div>
-                    </TableCell>
+                    <TableCell className="text-muted-foreground text-sm">{product.material}</TableCell>
                     <TableCell className="text-foreground font-semibold">{product.price}</TableCell>
                     <TableCell>
                       <Badge variant="outline" className={statusBadge[product.status]}>
@@ -857,7 +430,7 @@ const Products = () => {
           <DialogHeader>
             <DialogTitle className="font-display">Add New Product</DialogTitle>
           </DialogHeader>
-          {addDialog && renderProductForm()}
+          {addDialog && <ProductForm />}
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddDialog(false)}>Cancel</Button>
             <Button onClick={handleAdd}>Add Product</Button>
@@ -871,7 +444,7 @@ const Products = () => {
           <DialogHeader>
             <DialogTitle className="font-display">Edit Product</DialogTitle>
           </DialogHeader>
-          {editDialog && renderProductForm()}
+          {editDialog && <ProductForm />}
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditDialog(null)}>Cancel</Button>
             <Button onClick={handleEdit}>Save Changes</Button>
@@ -899,9 +472,3 @@ const Products = () => {
 };
 
 export default Products;
-// Commit 2 - 2024-05-01 09:37:00
-// Commit 37 - 2024-05-19 11:42:00
-// Commit 44 - 2024-05-23 08:05:00
-// Commit 49 - 2024-05-25 08:55:00
-// Commit 7 - 2024-05-02 00:54:00
-// Commit 44 - 2024-05-16 03:54:00
